@@ -526,11 +526,11 @@ Image = "map-pin-pen",
    end,
 })
 
-local Tab5 = Window:CreateTab("Game", "server")
-local Section10 = Tab4:CreateSection("In Game")
+local Tab5 = Window:CreateTab("Troll", "server")
+local Section10 = Tab4:CreateSection("Troll")
 
 local ligon = Tab5:CreateButton({
-    Name = "💡 Turn all lights",
+    Name = "💡 Power off",
     Callback = function()
         local rs = game:GetService("ReplicatedStorage")
         local event = rs:WaitForChild("Events"):WaitForChild("UseLightSwitch")
@@ -539,6 +539,21 @@ local ligon = Tab5:CreateButton({
         for _, room in pairs(roomsFolder:GetChildren()) do
             if room:IsA("Model") or room:IsA("Folder") then
                 event:FireServer(room)
+            end
+        end
+    end,
+})
+
+local doors = Tab5:CreateButton({
+    Name = "🚪 Open / Close all doors",
+    Callback = function()
+        local rs = game:GetService("ReplicatedStorage")
+        local event = rs:WaitForChild("Events"):WaitForChild("ClientChangeDoorState")
+        local doorsFolder = workspace:WaitForChild("Doors")
+
+        for _, doorModel in pairs(doorsFolder:GetChildren()) do
+            if doorModel:IsA("Model") then
+                event:FireServer(doorModel)
             end
         end
     end,

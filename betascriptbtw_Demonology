@@ -427,19 +427,23 @@ local NOC = Tab4:CreateToggle({
    CurrentValue = false,
    Flag = "Toggle1",
    Callback = function(bool)
-   noclip = bool
-   		Stepped = RunService.Stepped:Connect(function()
-			if not noclip == false then
-				for a, b in pairs(game.Workspace:GetChildren()) do
-                if b.Name == player.Name then
-                for i, v in pairs(Workspace[player.Name]:GetChildren()) do
-                if v:IsA("BasePart") then
-                v.CanCollide = false
-             end end end end
-			else
-				Stepped:Disconnect()
-			end
-		end)
+    noclip = bool
+    print(noclip)
+   if noclip then
+    RunService.Stepped:Connect(function()
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end)
+   else
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+   end
    end,
 })
 

@@ -181,17 +181,7 @@ local PL = game.Players.LocalPlayer
 local toggles = {}
 local temperature = "Waiting for thermometer to check"
 
--- safely move any model even if it doesn't have PrimaryPart set
-local function safePivot(model, cframe)
-	if not model or not cframe then return end
-	local pp = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
-	if pp then
-		model.PrimaryPart = pp
-		model:PivotTo(cframe)
-	end
-end
-
--- get all items by name (workspace.Items only)
+-- get all items by name
 local function getAllItems(itemName)
 	local folder = workspace:FindFirstChild("Items")
 	if not folder then return {} end
@@ -205,8 +195,8 @@ local function getAllItems(itemName)
 	return items
 end
 
--- drop item toggle that makes items orbit ghost
-local function dropItemOrbit(tab, name, itemName, radius, height, showTemp)
+-- teleport item to ghost with BodyPosition + BodyVelocity + BodyGyro
+local function dropItemToGhost(tab, name, itemName, offset, showTemp)
 	tab:CreateToggle({
 		Name = name,
 		CurrentValue = false,
@@ -227,7 +217,6 @@ local function dropItemOrbit(tab, name, itemName, radius, height, showTemp)
 			end
 
 			if enabled then
-				local angle = 0
 				toggles[itemName] = RS.RenderStepped:Connect(function(delta)
 					local ghostModel = workspace:FindFirstChild("Ghost")
 					if not ghostModel then return end
@@ -235,52 +224,80 @@ local function dropItemOrbit(tab, name, itemName, radius, height, showTemp)
 					if not hrp then return end
 
 					local items = getAllItems(itemName)
-					local count = #items
-					if count == 0 then return end
-
-					for index, it in ipairs(items) do
+					for _, it in ipairs(items) do
 						if it and it.Parent then
 							local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
 							if pp then
 								it.PrimaryPart = pp
 
-								-- calculate orbit position
-								local orbitAngle = angle + (index / count) * math.pi * 2
-								local x = math.cos(orbitAngle) * radius
-								local z = math.sin(orbitAngle) * radius
-								local targetPos = hrp.Position + Vector3.new(x, height, z)
+								-- BodyPosition
+								local bp = pp:FindFirstChild("BP_Ghost")
+								if not bp then
+									bp = Instance.new("BodyPosition")
+									bp.Name = "BP_Ghost"
+									bp.MaxForce = Vector3.new(1e6,1e6,1e6)
+									bp.D = 100
+									bp.P = 1000
+									bp.Parent = pp
+								end
 
-								-- rotate to face ghost
-								local newCFrame = CFrame.lookAt(targetPos, hrp.Position)
+								-- BodyVelocity to prevent falling
+								local bv = pp:FindFirstChild("BV_Ghost")
+								if not bv then
+									bv = Instance.new("BodyVelocity")
+									bv.Name = "BV_Ghost"
+									bv.MaxForce = Vector3.new(1e6,1e6,1e6)
+									bv.Velocity = Vector3.new(0,0,0)
+									bv.Parent = pp
+								end
 
-								-- smooth movement
-								local finalCFrame = it:GetPivot():Lerp(newCFrame, 0.5)
-								safePivot(it, finalCFrame)
-							end
+								-- BodyGyro to face ghost
+								local bg = pp:FindFirstChild("BG_Ghost")
+								if not bg then
+									bg = Instance.new("BodyGyro")
+									bg.Name = "BG_Ghost"
+									bg.MaxTorque = Vector3.new(1e6,1e6,1e6)
+									bg.D = 100
+									bg.P = 1000
+									bg.Parent = pp
+								end
 
-							-- thermometer display
-							if showTemp and it:FindFirstChild("Screen") then
-								local screen = it.Screen
-								local surfaceGui = screen:FindFirstChild("SurfaceGui")
-								local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
-								local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
-								if label then
-									temperature = label.Text
+								-- Set target position
+								local targetPos = hrp.Position + offset
+								bp.Position = targetPos
+
+								-- Set rotation to look at ghost
+								bg.CFrame = CFrame.new(pp.Position, hrp.Position)
+
+								-- Update thermometer
+								if showTemp and it:FindFirstChild("Screen") then
+									local screen = it.Screen
+									local surfaceGui = screen:FindFirstChild("SurfaceGui")
+									local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
+									local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
+									if label then
+										temperature = label.Text
+									end
 								end
 							end
 						end
 					end
-
-					-- increment angle for rotation
-					angle = angle + delta -- speed of orbit
 				end)
 			else
+				-- remove BodyPosition/Velocity/Gyro and drop items near player
 				local items = getAllItems(itemName)
 				for _, it in ipairs(items) do
 					if it and it.Parent then
 						local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
 						if pp then
-							safePivot(it, char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
+							local bp = pp:FindFirstChild("BP_Ghost")
+							if bp then bp:Destroy() end
+							local bv = pp:FindFirstChild("BV_Ghost")
+							if bv then bv:Destroy() end
+							local bg = pp:FindFirstChild("BG_Ghost")
+							if bg then bg:Destroy() end
+
+							pp.CFrame = char.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
 						end
 					end
 				end
@@ -290,17 +307,18 @@ local function dropItemOrbit(tab, name, itemName, radius, height, showTemp)
 					toggles[itemName] = nil
 				end
 			end
-		end,
+		end
 	})
 end
 
--- create orbit toggles for all items
-dropItemOrbit(Tab1, "📟 EMF Reader Orbit", "6", 3, 2)
-dropItemOrbit(Tab1, "👻 Laser Projector Orbit", "8", 4, 2)
-dropItemOrbit(Tab1, "📷 Camera Orbit", "1", 5, 2)
-dropItemOrbit(Tab1, "📖 Spirit Book Orbit", "3", 3.5, 1.5)
-dropItemOrbit(Tab1, "🌹 Flower Pot Orbit", "9", 2.5, 1)
-dropItemOrbit(Tab1, "🌡️ Thermometer Orbit", "2", 3, 2, true)
+-- create toggles for items
+dropItemToGhost(Tab1, "📟 EMF Reader", "6", Vector3.new(0,2,-3))
+dropItemToGhost(Tab1, "👻 Laser Projector", "8", Vector3.new(0,2,0))
+dropItemToGhost(Tab1, "📷 Camera", "1", Vector3.new(0,2,5))
+dropItemToGhost(Tab1, "📖 Spirit Book", "3", Vector3.new(0,2,0))
+dropItemToGhost(Tab1, "🌹 Flower Pot", "9", Vector3.new(0,2,0))
+dropItemToGhost(Tab1, "🌡️ Thermometer", "2", Vector3.new(0,2,-3), true)
+
 
 -- GUI: show ghost info + temperature
 local Section2 = Tab1:CreateSection("Ghost Status 👻")

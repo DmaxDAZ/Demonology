@@ -178,12 +178,10 @@ local Gl = Tab1:CreateToggle({
 local RS = game:GetService("RunService")
 local RSStorage = game:GetService("ReplicatedStorage")
 local PL = game.Players.LocalPlayer
-
--- Table to store each item toggle connection
 local toggles = {}
+local temperature = "Waiting for thermometer to check"
 
--- Generic function for any item
-local function dropItemToggle(tab, name, itemName, offset, isThermo)
+local function dropItemToggle(tab, name, itemName, offset, showTemp)
     tab:CreateToggle({
         Name = name,
         CurrentValue = false,
@@ -192,57 +190,53 @@ local function dropItemToggle(tab, name, itemName, offset, isThermo)
             local char = PL.Character or PL.CharacterAdded:Wait()
             local hrp = ghost:WaitForChild("HumanoidRootPart")
             local dropEvent = RSStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
-            local temp = "Waiting for thermometer to check"
 
-            local function getFolder() 
-                return workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems") 
-            end
-            local function findItem() 
-                local f = getFolder() 
-                return f and f:FindFirstChild(itemName) 
-            end
+            local function getFolder() return workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems") end
+            local function findItem() local f = getFolder() return f and f:FindFirstChild(itemName) end
 
             -- Drop all slots to make sure item exists
             dropEvent:FireServer("InvSlot1")
             dropEvent:FireServer("InvSlot2")
             dropEvent:FireServer("InvSlot3")
-            
-            task.wait(1) -- allow item to spawn
+            task.wait(1)
 
-            -- Disconnect previous connection if any
             if toggles[itemName] then
                 toggles[itemName]:Disconnect()
                 toggles[itemName] = nil
             end
 
--- Inside dropItemToggle function, replace RenderStepped with this logic
+            if enabled then
+                toggles[itemName] = RS.RenderStepped:Connect(function()
+                    if not enabled or not char then return end
+                    local it = findItem()
+                    if it then
+                        -- Teleport item smoothly to ghost
+                        it:PivotTo(CFrame.new(hrp.Position + offset, hrp.Position))
 
-if enabled then
-    toggles[itemName] = RS.RenderStepped:Connect(function()
-        if not enabled or not char then return end
-        local it = findItem()
-        if it and it:FindFirstChild("Handle") then
-            local h = it.Handle
-
-            -- Anchor only while moving
-            it:PivotTo(CFrame.lookAt(hrp.Position + offset, hrp.Position))
-        end
-    end)
-else
-    -- Move item back to your character before unanchoring
-    local it = findItem()
-    if it and it:FindFirstChild("Handle") then
-        it:PivotTo(char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)) -- above your head
-        it.Handle.Anchored = false
-    end
-
-    if toggles[itemName] then
-        toggles[itemName]:Disconnect()
-        toggles[itemName] = nil
-    end
-end
-
-        end
+                        -- Update temperature if this is thermometer
+                        if showTemp and it:FindFirstChild("Screen") then
+                            local screen = it.Screen
+                            local surfaceGui = screen:FindFirstChild("SurfaceGui")
+                            local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
+                            local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
+                            if label then
+                                temperature = label.Text
+                            end
+                        end
+                    end
+                end)
+            else
+                local it = findItem()
+                if it then
+                    -- Move it back above player
+                    it:PivotTo(char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
+                end
+                if toggles[itemName] then
+                    toggles[itemName]:Disconnect()
+                    toggles[itemName] = nil
+                end
+            end
+        end,
     })
 end
 
@@ -253,11 +247,7 @@ dropItemToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 0, 4))
 dropItemToggle(Tab1, "🌡️ Drop Thermometer near ghost", "2", Vector3.new(0, 0, -3), true)
 
 
-
-
-
-
-
+-- GUI: show ghost info + temperature
 local Section2 = Tab1:CreateSection("Ghost Status 👻")
 
 local stat1 = Tab1:CreateSection("Current room: ")
@@ -268,24 +258,22 @@ local stat5 = Tab1:CreateSection("Visual model: ")
 local stat6 = Tab1:CreateSection("Ghost Orb: ")
 local stat7 = Tab1:CreateSection("Temperature | waiting thermometer to check")
 
-spawn(function()
-    game:GetService("RunService").RenderStepped:Connect(function()
-         stat1:Set("Current room | "..ghost:GetAttribute("CurrentRoom"))
-         stat2:Set("Age | "..ghost:GetAttribute("Age"))
-         stat3:Set("Gender | "..ghost:GetAttribute("Gender"))
-         stat4:Set("Favorite room | "..ghost:GetAttribute("FavoriteRoom"))
-         stat5:Set("Visual model | "..ghost:GetAttribute("VisualModel"))
+RS.RenderStepped:Connect(function()
+    stat1:Set("Current room | "..(ghost:GetAttribute("CurrentRoom") or "Unknown"))
+    stat2:Set("Age | "..(ghost:GetAttribute("Age") or "Unknown"))
+    stat3:Set("Gender | "..(ghost:GetAttribute("Gender") or "Unknown"))
+    stat4:Set("Favorite room | "..(ghost:GetAttribute("FavoriteRoom") or "Unknown"))
+    stat5:Set("Visual model | "..(ghost:GetAttribute("VisualModel") or "Unknown"))
 
-         if game.Workspace:FindFirstChild("GhostOrb") then
-            stat6:Set("Ghost Orb | Have")
-         else
-            stat6:Set("Ghost Orb | Not have")
-         end
+    if workspace:FindFirstChild("GhostOrb") then
+        stat6:Set("Ghost Orb | Have")
+    else
+        stat6:Set("Ghost Orb | Not have")
+    end
 
-         stat7:Set("Temperature | "..temperature)
-
-    end)
+    stat7:Set("Temperature | "..temperature)
 end)
+
 
 local Tab2 = Window:CreateTab("Items", "hammer")
 local Section3 = Tab2:CreateSection("Items")

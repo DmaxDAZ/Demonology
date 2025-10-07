@@ -240,7 +240,7 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 						-- Smooth follow using Lerp
 						local targetCFrame = CFrame.new(hrp.Position + offset)
 						local currentCFrame = it:GetPivot()
-						local newCFrame = currentCFrame:Lerp(targetCFrame, 0.3) -- smooth
+						local newCFrame = currentCFrame:Lerp(targetCFrame, 0.14) -- smooth
 						safePivot(it, newCFrame)
 
 						-- Update thermometer screen reading

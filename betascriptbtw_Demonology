@@ -181,6 +181,28 @@ local PL = game.Players.LocalPlayer
 local toggles = {}
 local temperature = "Waiting for thermometer to check"
 
+-- function to find latest dropped item of that type
+local function getLatestItem(itemName)
+    local folders = {workspace:FindFirstChild("Items"), workspace:FindFirstChild("DroppedItems")}
+    for _, folder in ipairs(folders) do
+        if folder then
+            local foundItems = {}
+            for _, v in ipairs(folder:GetChildren()) do
+                if v.Name == itemName then
+                    table.insert(foundItems, v)
+                end
+            end
+            if #foundItems > 0 then
+                table.sort(foundItems, function(a, b)
+                    return a:GetDebugId() > b:GetDebugId() -- newest instance
+                end)
+                return foundItems[1]
+            end
+        end
+    end
+    return nil
+end
+
 local function dropItemToggle(tab, name, itemName, offset, showTemp)
     tab:CreateToggle({
         Name = name,
@@ -191,10 +213,7 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
             local hrp = ghost:WaitForChild("HumanoidRootPart")
             local dropEvent = RSStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
 
-            local function getFolder() return workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems") end
-            local function findItem() local f = getFolder() return f and f:FindFirstChild(itemName) end
-
-            -- Drop all slots to make sure item exists
+            -- Drop all slots
             dropEvent:FireServer("InvSlot1")
             dropEvent:FireServer("InvSlot2")
             dropEvent:FireServer("InvSlot3")
@@ -208,12 +227,11 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
             if enabled then
                 toggles[itemName] = RS.RenderStepped:Connect(function()
                     if not enabled or not char then return end
-                    local it = findItem()
+                    local it = getLatestItem(itemName)
                     if it then
-                        -- Teleport item smoothly to ghost
                         it:PivotTo(CFrame.new(hrp.Position + offset, hrp.Position))
 
-                        -- Update temperature if this is thermometer
+                        -- Thermometer GUI read
                         if showTemp and it:FindFirstChild("Screen") then
                             local screen = it.Screen
                             local surfaceGui = screen:FindFirstChild("SurfaceGui")
@@ -226,9 +244,8 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
                     end
                 end)
             else
-                local it = findItem()
+                local it = getLatestItem(itemName)
                 if it then
-                    -- Move it back above player
                     it:PivotTo(char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
                 end
                 if toggles[itemName] then
@@ -247,6 +264,7 @@ dropItemToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 0, 5))
 dropItemToggle(Tab1, "📖 Drop Spirit Book near ghost", "3", Vector3.new(0, -3.5, 0))
 dropItemToggle(Tab1, "🌹 Drop Flower Pot near ghost", "9", Vector3.new(0, -3.5, -2))
 dropItemToggle(Tab1, "🌡️ Drop Thermometer near ghost", "2", Vector3.new(0, 0, -3), true)
+
 
 
 -- GUI: show ghost info + temperature

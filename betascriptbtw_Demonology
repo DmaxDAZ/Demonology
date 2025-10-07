@@ -16,6 +16,7 @@ local current_ws = 10
 local current_pos = nil
 
 local noclip = false
+local fullbright = false
 
  local function getItemsList()
     local Items = {}
@@ -372,20 +373,33 @@ local Button5 = Tab2:CreateButton({
 local Tab3 = Window:CreateTab("Visual", "eye")
 local Section5 = Tab3:CreateSection("Visual")
 
+local fullbrightConnection
+
 local FB = Tab3:CreateToggle({
    Name = "🔦 Full Bright",
    CurrentValue = false,
    Flag = "Toggle1",
    Callback = function(bool)
 
+   fullbright = bool
+
    local normalBright = 0
    local normalAmbientCo = Color3.fromRGB(0,0,0)
 
    if bool then
+    fullbrightConnection = RunService.Stepped:Connect(function()
+        if not fullbright or not char then return end
     lighting.GlobalShadows = false
     lighting.Brightness = 2
     lighting.Ambient = Color3.fromRGB(255,255,255)
+    end)
    else
+
+            if fullbrightConnection then
+                fullbrightConnection:Disconnect()
+                fullbrightConnection = nil
+            end
+
     lighting.GlobalShadows = true
     lighting.Brightness = normalBright
     lighting.Ambient = normalAmbientCo

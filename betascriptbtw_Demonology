@@ -210,26 +210,26 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
                                 setNetworkOwner(pp)
                                 pp.CanCollide = false
 
-                                -- สร้างหรือรีไซเคิล BodyPosition
+                                -- BodyPosition
                                 local bp = pp:FindFirstChild("FollowBP")
                                 if not bp then
                                     bp = Instance.new("BodyPosition")
                                     bp.Name = "FollowBP"
                                     bp.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-                                    bp.D = 50 -- ค่าความหน่วง ยิ่งสูงยิ่ง smooth
-                                    bp.P = 10000
+                                    bp.D = 15  -- ทำให้ช้าลง
+                                    bp.P = 2000 -- ทำให้ smooth
                                     bp.Parent = pp
                                 end
                                 bp.Position = hrp.Position + offset
 
-                                -- สร้างหรือรีไซเคิล BodyGyro
+                                -- BodyGyro
                                 local bg = pp:FindFirstChild("FollowBG")
                                 if not bg then
                                     bg = Instance.new("BodyGyro")
                                     bg.Name = "FollowBG"
                                     bg.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-                                    bg.D = 50 -- ความหน่วงการหมุน
-                                    bg.P = 3000
+                                    bg.D = 15
+                                    bg.P = 2000
                                     bg.Parent = pp
                                 end
                                 bg.CFrame = CFrame.new(pp.Position, hrp.Position)
@@ -249,7 +249,7 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
                     end
                 end)
             else
-                -- ปิด toggle: ลบ BodyPosition/BodyGyro ให้ item อยู่ที่ตำแหน่งปัจจุบัน
+                -- ปิด toggle: วาปกลับมาหาตัวเรา
                 local items = getAllItems(itemName)
                 for _, it in ipairs(items) do
                     if it and it.Parent then
@@ -262,6 +262,11 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
                             if bp then bp:Destroy() end
                             local bg = pp:FindFirstChild("FollowBG")
                             if bg then bg:Destroy() end
+
+                            -- วาปกลับไปตัวผู้เล่น
+                            if char and char:FindFirstChild("HumanoidRootPart") then
+                                pp.CFrame = char.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
+                            end
                         end
                     end
                 end

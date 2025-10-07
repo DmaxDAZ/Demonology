@@ -248,42 +248,64 @@ local Dropdown1 = Tab2:CreateDropdown({
 })
 Tab2:CreateButton({Name="🔄 Refresh Item List", Callback=function() Dropdown1:Refresh(getItemsList()) end})
 
--- Bring Item Smooth + Auto Drop
-Tab2:CreateButton({
+-- Toggle สำหรับ Bring Item
+local bringItemsToggle = false
+local bringConnections = {}
+
+Tab2:CreateToggle({
     Name = "➡️ Bring Item to Ghost",
-    Callback = function()
-        if not current_item then return end
-        local ghostHRP = ghost and ghost:FindFirstChild("HumanoidRootPart")
-        if not ghostHRP then return end
-        local items = getAllItems(current_item)
-        for _, item in ipairs(items) do
-            local pp = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart", true)
-            if pp then
-                setNetworkOwner(pp)
-                pp.CanCollide = false
-                local bp = pp:FindFirstChild("FollowBP") or Instance.new("BodyPosition")
-                bp.Name = "FollowBP"
-                bp.MaxForce = Vector3.new(1e5,1e5,1e5)
-                bp.D = 20
-                bp.P = 2000
-                if not bp.Parent then bp.Parent = pp end
-                local bg = pp:FindFirstChild("FollowBG") or Instance.new("BodyGyro")
-                bg.Name = "FollowBG"
-                bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
-                bg.D = 20
-                bg.P = 2000
-                if not bg.Parent then bg.Parent = pp end
-                -- Move smoothly
-                RunService.RenderStepped:Connect(function()
-                    if ghostHRP and pp.Parent then
+    CurrentValue = false,
+    Flag = "ToggleBringItem",
+    Callback = function(bool)
+        bringItemsToggle = bool
+
+        -- ปิดทุก item เดิมก่อน
+        for _, conn in pairs(bringConnections) do
+            conn:Disconnect()
+        end
+        bringConnections = {}
+
+        if bool and current_item and ghost and ghost:FindFirstChild("HumanoidRootPart") then
+            local ghostHRP = ghost.HumanoidRootPart
+            local items = getAllItems(current_item)
+            for _, item in ipairs(items) do
+                local pp = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart", true)
+                if pp then
+                    setNetworkOwner(pp)
+                    pp.CanCollide = false
+
+                    local bp = pp:FindFirstChild("FollowBP") or Instance.new("BodyPosition")
+                    bp.Name = "FollowBP"
+                    bp.MaxForce = Vector3.new(1e5,1e5,1e5)
+                    bp.D = 15
+                    bp.P = 2000
+                    if not bp.Parent then bp.Parent = pp end
+
+                    local bg = pp:FindFirstChild("FollowBG") or Instance.new("BodyGyro")
+                    bg.Name = "FollowBG"
+                    bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
+                    bg.D = 15
+                    bg.P = 2000
+                    if not bg.Parent then bg.Parent = pp end
+
+                    local conn
+                    conn = RunService.RenderStepped:Connect(function()
+                        if not bringItemsToggle or not pp.Parent or not ghostHRP.Parent then
+                            if conn then conn:Disconnect() end
+                            bp:Destroy()
+                            bg:Destroy()
+                            return
+                        end
                         bp.Position = ghostHRP.Position + Vector3.new(0,2,0)
                         bg.CFrame = CFrame.new(pp.Position, ghostHRP.Position)
-                    end
-                end)
+                    end)
+                    table.insert(bringConnections, conn)
+                end
             end
         end
     end
 })
+
 
 -- Pick Up Item
 Tab2:CreateButton({

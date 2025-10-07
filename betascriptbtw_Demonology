@@ -6,6 +6,7 @@ local hum = char:FindFirstChild("Humanoid")
 local ghost = game.Workspace:FindFirstChild("Ghost")
 local itemsFolder = workspace:FindFirstChild("Items")
 local lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 
 local skinwalker = 0
 local itemss_s = 0
@@ -485,7 +486,7 @@ Image = "map-pin-pen",
 })
 
 spawn(function()
-RunService.Stepped:Connect(function()
+RunService.RenderStepped:Connect(function()
     if noclip and character then
         for _, v in pairs(character:GetDescendants()) do
             if v:IsA("BasePart") and v.CanCollide then

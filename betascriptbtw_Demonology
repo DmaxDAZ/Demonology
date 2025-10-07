@@ -422,31 +422,41 @@ local reset = Tab4:CreateButton({
    end,
 })
 
+local noclipConnection
+
 local NOC = Tab4:CreateToggle({
-   Name = "🧍 Noclip",
-   CurrentValue = false,
-   Flag = "Toggle1",
-   Callback = function(bool)
-    noclip = bool
-    print(noclip)
-   if bool then
-    RunService.Stepped:Connect(function()
-      if noclip == false then return end
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide then
-                part.CanCollide = false
+    Name = "🧍 Noclip",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(bool)
+        noclip = bool
+        print("Noclip:", noclip)
+        if bool then
+            noclipConnection = RunService.Stepped:Connect(function()
+                if not noclip or not char then return end
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end)
+        else
+            if noclipConnection then
+                noclipConnection:Disconnect()
+                noclipConnection = nil
+            end
+
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
             end
         end
-    end)
-   else
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = true
-            end
-        end
-   end
-   end,
+    end,
 })
+
 
 local Section7 = Tab4:CreateSection("Escape Mode")
 

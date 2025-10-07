@@ -530,7 +530,7 @@ local Tab5 = Window:CreateTab("Troll", "server")
 local Section10 = Tab4:CreateSection("Troll")
 
 local ligon = Tab5:CreateButton({
-    Name = "💡 Power off",
+    Name = "🪫 Power off",
     Callback = function()
         local rs = game:GetService("ReplicatedStorage")
         local event = rs:WaitForChild("Events"):WaitForChild("UseLightSwitch")
@@ -554,7 +554,15 @@ local doors = Tab5:CreateButton({
         for _, doorModel in pairs(doorsFolder:GetChildren()) do
             if doorModel:IsA("Model") then
                 event:FireServer(doorModel)
+                task.wait(0.5)
             end
         end
+    end,
+})
+
+local fixfuse = Tab5:CreateButton({
+    Name = "💡 Fix Fusebox",
+    Callback = function()
+    game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("ToggleFuseBox"):FireServer()
     end,
 })

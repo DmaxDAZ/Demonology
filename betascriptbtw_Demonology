@@ -175,6 +175,18 @@ local Gl = Tab1:CreateToggle({
    end,
 })
 
+local drop = Tab1:CreateButton({
+    Name = "Drop EMF Reader near ghost (must in slot 1)",
+    Callback = function()
+local args = {
+	"InvSlot1"
+}
+game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("RequestItemDrop"):FireServer(unpack(args))
+task.wait()
+itemsFolder:FindFirstChild("6"):PivotTo(game.Workspace.YOUDPTB2.HumanoidRootPart.CFrame * CFrame.new(0,0,-4))
+    end,
+})
+
 local Section2 = Tab1:CreateSection("Ghost Status 👻")
 
 local stat1 = Tab1:CreateSection("Current room: ")

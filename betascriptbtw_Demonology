@@ -33,7 +33,7 @@ local Window = rayfield:CreateWindow({
    LoadingTitle = "[UPD] Demonology🕯️",
    LoadingSubtitle = "Script Version 1.1.2",
    ShowText = "Rayfield",
-   Theme = "Ocean",
+   Theme = "Amethyst",
 
    ToggleUIKeybind = "K",
 

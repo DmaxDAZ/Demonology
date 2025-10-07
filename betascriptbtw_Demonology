@@ -185,7 +185,6 @@ local temperature = "Waiting for thermometer to check"
 local function getAllItems(itemName)
 	local folder = workspace:FindFirstChild("Items")
 	if not folder then return {} end
-
 	local items = {}
 	for _, v in ipairs(folder:GetChildren()) do
 		if v.Name == itemName then
@@ -195,7 +194,7 @@ local function getAllItems(itemName)
 	return items
 end
 
--- teleport item to ghost with continuous noclip + BodyPosition + BodyVelocity + BodyGyro
+-- teleport items to ghost using BodyPosition + BodyVelocity + BodyGyro with continuous noclip
 local function dropItemNoclip(tab, name, itemName, offset, showTemp)
 	tab:CreateToggle({
 		Name = name,
@@ -230,7 +229,7 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
 							if pp then
 								it.PrimaryPart = pp
 
-								-- continuously noclip
+								-- continuous noclip
 								pp.CanCollide = false
 
 								-- BodyPosition
@@ -240,11 +239,11 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
 									bp.Name = "BP_Ghost"
 									bp.MaxForce = Vector3.new(1e10,1e10,1e10)
 									bp.D = 50
-									bp.P = 1e5
+									bp.P = 1e6  -- high P for instant movement
 									bp.Parent = pp
 								end
 
-								-- BodyVelocity to prevent falling
+								-- BodyVelocity
 								local bv = pp:FindFirstChild("BV_Ghost")
 								if not bv then
 									bv = Instance.new("BodyVelocity")
@@ -252,26 +251,28 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
 									bv.MaxForce = Vector3.new(1e10,1e10,1e10)
 									bv.Velocity = Vector3.new(0,0,0)
 									bv.Parent = pp
+								else
+									bv.Velocity = Vector3.new(0,0,0)
 								end
 
-								-- BodyGyro to face ghost
+								-- BodyGyro
 								local bg = pp:FindFirstChild("BG_Ghost")
 								if not bg then
 									bg = Instance.new("BodyGyro")
 									bg.Name = "BG_Ghost"
 									bg.MaxTorque = Vector3.new(1e10,1e10,1e10)
 									bg.D = 50
-									bg.P = 1e5
+									bg.P = 1e6
 									bg.Parent = pp
 								end
 
-								-- Set target position
+								-- Update target position
 								bp.Position = hrp.Position + offset
 
-								-- Rotate to face ghost
+								-- Face ghost
 								bg.CFrame = CFrame.new(pp.Position, hrp.Position)
 
-								-- update thermometer
+								-- Update thermometer
 								if showTemp and it:FindFirstChild("Screen") then
 									local screen = it.Screen
 									local surfaceGui = screen:FindFirstChild("SurfaceGui")
@@ -286,7 +287,7 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
 					end
 				end)
 			else
-				-- remove BodyPosition/Velocity/Gyro and restore items
+				-- remove BP/BV/BG and restore items
 				local items = getAllItems(itemName)
 				for _, it in ipairs(items) do
 					if it and it.Parent then
@@ -314,7 +315,7 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
 	})
 end
 
--- create toggles for all items
+-- create toggles
 dropItemNoclip(Tab1, "📟 EMF Reader", "6", Vector3.new(0,2,-3))
 dropItemNoclip(Tab1, "👻 Laser Projector", "8", Vector3.new(0,2,0))
 dropItemNoclip(Tab1, "📷 Camera", "1", Vector3.new(0,2,5))

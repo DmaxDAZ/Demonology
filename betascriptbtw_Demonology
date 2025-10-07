@@ -228,30 +228,35 @@ local droplaser = Tab1:CreateButton({
 })
 
 local dropcamera = Tab1:CreateButton({
-    Name = "📟 Drop Camera near ghost",
+    Name = "📷 Drop Camera near ghost",
     Callback = function()
-        local hrp = ghost:WaitForChild("HumanoidRootPart")
-
         local rs = game:GetService("ReplicatedStorage")
         local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
-        event:FireServer("InvSlot1")
-        event:FireServer("InvSlot2")
-        event:FireServer("InvSlot3")
 
-        task.wait(1)
+        local hrp = ghost:WaitForChild("HumanoidRootPart")
+        local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
         if not itemsFolder then
             warn("❌ ไม่พบโฟลเดอร์ items ใน workspace")
             return
         end
 
+        event:FireServer("InvSlot1")
+        event:FireServer("InvSlot2")
+        event:FireServer("InvSlot3")
+
+        task.wait(1)
+
         local droppedItem = itemsFolder:FindFirstChild("1")
         if droppedItem then
-            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 2.5, 4) * CFrame.Angles(0,math.rad(-180),0))
+            local dropPos = hrp.Position + hrp.CFrame.LookVector * 4 + Vector3.new(0, 2.5, 0)
+            
+            droppedItem:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
         else
-            warn("❌ ไม่พบ EMF Reader ที่ drop แล้ว")
+            warn("❌ ไม่พบ Camera ที่ drop แล้ว")
         end
     end,
 })
+
 
 
 local Section2 = Tab1:CreateSection("Ghost Status 👻")

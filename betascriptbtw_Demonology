@@ -297,8 +297,8 @@ dropItemNoclip(Tab1, "🌡️ Thermometer", "2", Vector3.new(0, 2, -3), true)
 -- Ghost Status GUI
 --------------------------------------------------------------------------------
 
-local ghost = workspace:FindFirstChild("Ghost")
-workspace.ChildAdded:Connect(function(child)
+local ghost = game.Workspace:FindFirstChild("Ghost")
+game.Workspace.ChildAdded:Connect(function(child)
     if child.Name == "Ghost" then
         ghost = child
     end

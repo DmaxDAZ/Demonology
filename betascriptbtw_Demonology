@@ -178,7 +178,7 @@ local Gl = Tab1:CreateToggle({
 local drop = Tab1:CreateButton({
     Name = "📟 Drop EMF Reader near ghost",
     Callback = function()
-        local hrp = game.Workspace.YOUDPTB2:WaitForChild("HumanoidRootPart")
+        local hrp = ghost:WaitForChild("HumanoidRootPart")
 
         local rs = game:GetService("ReplicatedStorage")
         local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
@@ -194,7 +194,7 @@ local drop = Tab1:CreateButton({
 
         local droppedItem = itemsFolder:FindFirstChild("6")
         if droppedItem then
-            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 0, -4))
+            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 2, -3))
         else
             warn("❌ ไม่พบ EMF Reader ที่ drop แล้ว")
         end

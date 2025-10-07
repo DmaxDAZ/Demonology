@@ -195,7 +195,7 @@ local function getAllItems(itemName)
 	return items
 end
 
--- teleport item to ghost with noclip + BodyPosition + BodyVelocity + BodyGyro
+-- teleport item to ghost with continuous noclip + BodyPosition + BodyVelocity + BodyGyro
 local function dropItemNoclip(tab, name, itemName, offset, showTemp)
 	tab:CreateToggle({
 		Name = name,
@@ -230,7 +230,7 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
 							if pp then
 								it.PrimaryPart = pp
 
-								-- noclip
+								-- continuously noclip
 								pp.CanCollide = false
 
 								-- BodyPosition
@@ -268,7 +268,7 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
 								-- Set target position
 								bp.Position = hrp.Position + offset
 
-								-- Set rotation to look at ghost
+								-- Rotate to face ghost
 								bg.CFrame = CFrame.new(pp.Position, hrp.Position)
 
 								-- update thermometer
@@ -286,7 +286,7 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
 					end
 				end)
 			else
-				-- remove BodyPosition/Velocity/Gyro and drop items near player
+				-- remove BodyPosition/Velocity/Gyro and restore items
 				local items = getAllItems(itemName)
 				for _, it in ipairs(items) do
 					if it and it.Parent then

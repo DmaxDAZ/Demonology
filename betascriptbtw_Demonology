@@ -213,7 +213,7 @@ local droplaser = Tab1:CreateToggle({
             if lop1 then
                 lop1:Disconnect()
                 lop1 = nil
-                itemsFolder:FindFirstChild("6").Anchored = false
+                itemsFolder:FindFirstChild("6").Handle.Anchored = false
             end
     end
    end,
@@ -260,7 +260,7 @@ local droplaser = Tab1:CreateToggle({
             if lop2 then
                 lop2:Disconnect()
                 lop2 = nil
-                itemsFolder:FindFirstChild("8").Anchored = false
+                itemsFolder:FindFirstChild("8").Handle.Anchored = false
             end
     end
    end,
@@ -308,7 +308,7 @@ local dropcamera = Tab1:CreateToggle({
             if lop3 then
                 lop3:Disconnect()
                 lop3 = nil
-                itemsFolder:FindFirstChild("1").Anchored = false
+                itemsFolder:FindFirstChild("1").Handle.Anchored = false
             end
     end
    end,
@@ -346,7 +346,7 @@ local dropther = Tab1:CreateToggle({
         if droppedItem then
             local dropPos = hrp.Position + hrp.CFrame.LookVector * -3 + Vector3.new(0, 0, 0)
             droppedItem:WaitForChild("Handle").Anchored = true
-            temperature = droppedItem:WaitForChild("Screen").SurfaceGui.Frame.TextLabel.ContentText
+            temperature = droppedItem:WaitForChild("Screen").SurfaceGui.Frame:FindFirstChildWhichIsA("TextLabel").ContentText
             droppedItem:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
         else
             warn("❌ not found Camera dropped")
@@ -357,7 +357,7 @@ local dropther = Tab1:CreateToggle({
             if lop4 then
                 lop4:Disconnect()
                 lop4 = nil
-                itemsFolder:FindFirstChild("2").Anchored = false
+                itemsFolder:FindFirstChild("2").Handle.Anchored = false
             end
     end
    end,

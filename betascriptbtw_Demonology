@@ -202,6 +202,7 @@ local droplaser = Tab1:CreateToggle({
         if not bool or not char then return end
                local droppedItem = itemsFolder:FindFirstChild("6")
         if droppedItem then
+            droppedItem:WaitForChild("Handle").Anchored = true
             droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, -2, -3))
         else
             warn("❌ Not found EMF Reader dropped")
@@ -212,6 +213,7 @@ local droplaser = Tab1:CreateToggle({
             if lop1 then
                 lop1:Disconnect()
                 lop1 = nil
+                itemsFolder:FindFirstChild("6").Anchored = false
             end
     end
    end,
@@ -247,6 +249,7 @@ local droplaser = Tab1:CreateToggle({
         if not bool or not char then return end
                local droppedItem = itemsFolder:FindFirstChild("8")
         if droppedItem then
+            droppedItem:WaitForChild("Handle").Anchored = true
             droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 0, 3))
         else
             warn("❌ Not found Laser Projector dropped")
@@ -257,6 +260,7 @@ local droplaser = Tab1:CreateToggle({
             if lop2 then
                 lop2:Disconnect()
                 lop2 = nil
+                itemsFolder:FindFirstChild("8").Anchored = false
             end
     end
    end,
@@ -293,7 +297,7 @@ local dropcamera = Tab1:CreateToggle({
                local droppedItem = itemsFolder:FindFirstChild("1")
         if droppedItem then
             local dropPos = hrp.Position + hrp.CFrame.LookVector * 4 + Vector3.new(0, 0, 0)
-            
+            droppedItem:WaitForChild("Handle").Anchored = true
             droppedItem:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
         else
             warn("❌ not found Camera dropped")
@@ -304,6 +308,7 @@ local dropcamera = Tab1:CreateToggle({
             if lop3 then
                 lop3:Disconnect()
                 lop3 = nil
+                itemsFolder:FindFirstChild("1").Anchored = false
             end
     end
    end,

@@ -261,7 +261,7 @@ local dropther = Tab1:CreateToggle({
             lop4 = RunService.RenderStepped:Connect(function()
                 if not bool or not char then return end
 
-                local droppedItem = itemsFolder:FindFirstChild("1")
+                local droppedItem = itemsFolder:FindFirstChild("2")
                 if droppedItem then
                     local handle = droppedItem:FindFirstChild("Handle")
                     local screen = droppedItem:FindFirstChild("Screen")

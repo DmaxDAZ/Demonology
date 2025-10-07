@@ -226,7 +226,6 @@ if enabled then
 
             -- Anchor only while moving
             it:PivotTo(CFrame.lookAt(hrp.Position + offset, hrp.Position))
-            h.Anchored = true
         end
     end)
 else

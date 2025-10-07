@@ -12,7 +12,7 @@ local itemss_s = 0
 
 local current_item = nil
 local current_ws = 10
-local current_pos = Vector3.new(0,0,0)
+local current_pos = nil
 
  local function getItemsList()
     local Items = {}
@@ -33,11 +33,11 @@ local Window = rayfield:CreateWindow({
    LoadingTitle = "[UPD] Demonology🕯️",
    LoadingSubtitle = "Script Version 1.1.2",
    ShowText = "Rayfield",
-   Theme = "Amethyst",
+   Theme = "Ocean",
 
    ToggleUIKeybind = "K",
 
-   DisableRayfieldPrompts = false,
+   DisableRayfieldPrompts = true,
    DisableBuildWarnings = false,
 
    ConfigurationSaving = {
@@ -52,15 +52,15 @@ local Window = rayfield:CreateWindow({
       RememberJoins = true
    },
 
-   KeySystem = false,
+   KeySystem = true,
    KeySettings = {
-      Title = "Untitled",
+      Title = "[UPD] Demonology🕯️ | Anchor Hub",
       Subtitle = "Key System",
-      Note = "No method of obtaining the key is provided", 
+      Note = "The key is '67' this is only a testing key system", 
       FileName = "Key",
       SaveKey = true, 
       GrabKeyFromSite = false,
-      Key = {"Hello"}
+      Key = {"67"}
    }
 })
 
@@ -412,6 +412,13 @@ local Button6 = Tab4:CreateButton({
    end,
 })
 
+local reset = Tab4:CreateButton({
+   Name = "🏃 Reset Walk Speed Slider Value",
+   Callback = function()
+   Slider1:Set(10)
+   end,
+})
+
 local Section7 = Tab4:CreateSection("Escape Mode")
 
 local Section8 = Tab4:CreateSection("❎ Saved Position | None")
@@ -436,7 +443,7 @@ Section8:Set("✅ Saved Position | " .. current_pos.X .. current_pos.Y .. curren
 local Button8 = Tab4:CreateButton({
    Name = "🚩 Reset Position",
    Callback = function()
-   current_pos = Vector3.new(0,0,0)
+   current_pos = nil
 
 rayfield:Notify({
 Title = "Hey!",

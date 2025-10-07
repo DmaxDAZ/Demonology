@@ -316,6 +316,55 @@ local dropcamera = Tab1:CreateToggle({
 
 
 
+local lop4
+local temperature = "Waiting for thermometer to check"
+
+local dropther = Tab1:CreateToggle({
+   Name = "Drop Thermometer near ghost",
+   CurrentValue = false,
+   Flag = "Toggle1", 
+   Callback = function(bool)
+           local rs = game:GetService("ReplicatedStorage")
+        local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
+
+        local hrp = ghost:WaitForChild("HumanoidRootPart")
+        local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
+        if not itemsFolder then
+            warn("❌ item folder is missing")
+            return
+        end
+
+        event:FireServer("InvSlot1")
+        event:FireServer("InvSlot2")
+        event:FireServer("InvSlot3")
+
+        task.wait(1)
+        if bool then
+        lop4 = RunService.RenderStepped:Connect(function()
+        if not bool or not char then return end
+               local droppedItem = itemsFolder:FindFirstChild("1")
+        if droppedItem then
+            local dropPos = hrp.Position + hrp.CFrame.LookVector * -3 + Vector3.new(0, 0, 0)
+            droppedItem:WaitForChild("Handle").Anchored = true
+            temperature = droppedItem:WaitForChild("Screen").SurfaceGui.Frame.TextLabel.ContentText
+            droppedItem:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
+        else
+            warn("❌ not found Camera dropped")
+        end
+        end)
+           else
+
+            if lop4 then
+                lop4:Disconnect()
+                lop4 = nil
+                itemsFolder:FindFirstChild("2").Anchored = false
+            end
+    end
+   end,
+})
+
+
+
 local Section2 = Tab1:CreateSection("Ghost Status 👻")
 
 local stat1 = Tab1:CreateSection("Current room: ")
@@ -324,6 +373,7 @@ local stat3 = Tab1:CreateSection("Gender: ")
 local stat4 = Tab1:CreateSection("Favorite room: ")
 local stat5 = Tab1:CreateSection("Visual model: ")
 local stat6 = Tab1:CreateSection("Ghost Orb: ")
+local stat7 = Tab1:CreateSection("Temperature | waiting thermometer to check")
 
 spawn(function()
     game:GetService("RunService").RenderStepped:Connect(function()
@@ -338,6 +388,9 @@ spawn(function()
          else
             stat6:Set("Ghost Orb | Not have")
          end
+
+         stat7:Set("Temperature | "..temperature)
+
     end)
 end)
 

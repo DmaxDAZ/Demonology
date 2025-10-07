@@ -426,7 +426,7 @@ local Section8 = Tab4:CreateSection("❎ Saved Position | None")
 local Button7 = Tab4:CreateButton({
    Name = "🚩 Save Position",
    Callback = function()
-   current_pos = root.Position
+   current_pos = root.CFrame
 
 rayfield:Notify({
 Title = "Hey!",
@@ -462,7 +462,7 @@ local Section9 = Tab4:CreateSection("Teleport")
 local Button9 = Tab4:CreateButton({
    Name = "🚩 Teleport back to saved position",
    Callback = function()
-   root.Position = current_pos
+   root.CFrame = current_pos
 
 rayfield:Notify({
 Title = "Hey!",

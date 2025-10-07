@@ -176,15 +176,17 @@ local Gl = Tab1:CreateToggle({
 })
 
 local drop = Tab1:CreateButton({
-    Name = "📟 Drop EMF Reader near ghost (slot 1)",
+    Name = "📟 Drop EMF Reader near ghost",
     Callback = function()
         local hrp = game.Workspace.YOUDPTB2:WaitForChild("HumanoidRootPart")
 
         local rs = game:GetService("ReplicatedStorage")
         local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
         event:FireServer("InvSlot1")
+        event:FireServer("InvSlot2")
+        event:FireServer("InvSlot3")
 
-        task.wait(0.3)
+        task.wait(1)
         if not itemsFolder then
             warn("❌ ไม่พบโฟลเดอร์ items ใน workspace")
             return

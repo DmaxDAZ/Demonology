@@ -1,0 +1,467 @@
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local root = char:FindFirstChild("HumanoidRootPart")
+local hum = char:FindFirstChild("Humanoid")
+
+local ghost = game.Workspace:FindFirstChild("Ghost")
+local itemsFolder = workspace:FindFirstChild("Items")
+local lighting = game:GetService("Lighting")
+
+local skinwalker = 0
+local itemss_s = 0
+
+local current_item = nil
+local current_ws = 10
+local current_pos = Vector3.new(0,0,0)
+
+ local function getItemsList()
+    local Items = {}
+    for _, child in pairs(itemsFolder:GetChildren()) do
+        if child:IsA("Model") then
+            table.insert(Items, child:GetAttribute("ItemName"))
+        end
+    end
+    return Items
+end
+
+
+
+local rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Window = rayfield:CreateWindow({
+   Name = "[UPD] Demonology🕯️ | Anchor Hub ⚓",
+   Icon = 0,
+   LoadingTitle = "[UPD] Demonology🕯️",
+   LoadingSubtitle = "Script Version 1.1.2",
+   ShowText = "Rayfield",
+   Theme = "Ocean",
+
+   ToggleUIKeybind = "K",
+
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false,
+
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil,
+      FileName = "Big Hub"
+   },
+
+   Discord = {
+      Enabled = false,
+      Invite = "noinvitelink",
+      RememberJoins = true
+   },
+
+   KeySystem = false,
+   KeySettings = {
+      Title = "Untitled",
+      Subtitle = "Key System",
+      Note = "No method of obtaining the key is provided", 
+      FileName = "Key",
+      SaveKey = true, 
+      GrabKeyFromSite = false,
+      Key = {"Hello"}
+   }
+})
+
+local Tab1 = Window:CreateTab("Ghost", "ghost")
+local Section1 = Tab1:CreateSection("Ghost")
+
+local Button1 = Tab1:CreateButton({
+   Name = "✋ Check handprints",
+   Callback = function()
+        skinwalker = 0
+        local handprintsFolder = workspace:FindFirstChild("Handprints")
+        
+        if not handprintsFolder then
+            rayfield:Notify({
+              Title = "Error!",
+              Content = "The game has been updated or handprint folder is missing!",
+              Duration = 6.5,
+              Image = "hand",
+            })
+            return
+        end
+
+        for _, printPart in pairs(handprintsFolder:GetChildren()) do
+            -- A simple check for existence, assuming any part inside the folder is a handprint
+            if printPart:IsA("Part") or printPart:IsA("Model") then
+                -- The previous check `if not pri:FindFirstChildOfClass("Part")` was flawed. 
+                -- We assume any direct child of 'Handprints' is a handprint if it's a Part/Model.
+                skinwalker += 1
+                print("Calculated Handprint: " .. printPart.Name .. "!")
+            end
+        end
+
+        if skinwalker > 0 then
+
+            rayfield:Notify({
+              Title = "Success!",
+              Content = "There are " .. skinwalker .. " Handprints",
+              Duration = 6.5,
+              Image = "hand",
+            })
+        else
+
+            rayfield:Notify({
+              Title = "No Handprints Found",
+              Content = "No Handprints are currently visible or they haven't spawned yet.",
+              Duration = 6.5,
+              Image = "hand",
+            })
+        end
+   end,
+})
+
+local Toggle1 = Tab1:CreateToggle({
+   Name = "👻 Ghost pov",
+   CurrentValue = false,
+   Flag = "Toggle1",
+   Callback = function(bool)
+    if bool then
+    game.Workspace.Camera.CameraSubject = ghost.Humanoid
+    else
+    game.Workspace.Camera.CameraSubject = char.Humanoid
+    end
+   end,
+})
+
+local Toggle2 = Tab1:CreateToggle({
+   Name = "👻 Show Ghost's body",
+   CurrentValue = false,
+   Flag = "Toggle1",
+   Callback = function(bool)
+    if bool then
+        for _, meshPart in pairs(ghost.VisibleParts:GetChildren()) do
+            if meshPart:IsA("MeshPart") then
+             meshPart.Transparency = 0
+            end
+        end
+    else
+        for _, meshPart in pairs(ghost.VisibleParts:GetChildren()) do
+            if meshPart:IsA("MeshPart") then
+             meshPart.Transparency = 1
+            end
+        end
+    end
+   end,
+})
+
+local activeHighlights_Gl = {}
+
+local Gl = Tab1:CreateToggle({
+   Name = "👻 Esp Ghost",
+   CurrentValue = false,
+   Flag = "Toggle1",
+   Callback = function(bool)
+    if bool then
+    local highlight = Instance.new("Highlight")
+    highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Yellow
+    highlight.FillTransparency = 0.5
+    highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+    highlight.OutlineTransparency = 0
+    highlight.Parent = ghost
+
+    activeHighlights_Gl = highlight
+    else
+    if activeHighlights_Gl and activeHighlights_Gl:IsA("Highlight") then
+        activeHighlights_Gl:Destroy()
+    end
+    end
+   end,
+})
+
+local Section2 = Tab1:CreateSection("Ghost Status 👻")
+
+local stat1 = Tab1:CreateSection("Current room: ")
+local stat2 = Tab1:CreateSection("Age: ")
+local stat3 = Tab1:CreateSection("Gender: ")
+local stat4 = Tab1:CreateSection("Favorite room: ")
+local stat5 = Tab1:CreateSection("Visual model: ")
+local stat6 = Tab1:CreateSection("Ghost Orb: ")
+
+spawn(function()
+    game:GetService("RunService").RenderStepped:Connect(function()
+         stat1:Set("Current room | "..ghost:GetAttribute("CurrentRoom"))
+         stat2:Set("Age | "..ghost:GetAttribute("Age"))
+         stat3:Set("Gender | "..ghost:GetAttribute("Gender"))
+         stat4:Set("Favorite room | "..ghost:GetAttribute("FavoriteRoom"))
+         stat5:Set("Visual model | "..ghost:GetAttribute("VisualModel"))
+
+         if game.Workspace:FindFirstChild("GhostOrb") then
+            stat6:Set("Ghost Orb | Have")
+         else
+            stat6:Set("Ghost Orb | Not have")
+         end
+    end)
+end)
+
+local Tab2 = Window:CreateTab("Items", "hammer")
+local Section3 = Tab2:CreateSection("Items")
+
+local Button2 = Tab2:CreateButton({
+    Name = "🔢 Count current Items",
+Callback = function()
+local itemss_s = 0 -- **Changed to local for best practice**
+
+if not itemsFolder then
+rayfield:Notify({
+Title = "Error!",
+Content = "The game has been updated or Items folder is missing!",
+ Duration = 6.5,
+Image = "hammer",
+})
+return
+end
+
+for _, tool in pairs(itemsFolder:GetChildren()) do
+              if tool:IsA("Model") then
+ itemss_s += 1
+ print("Calculated Item: " .. tool.Name .. "!")
+ end
+end
+
+ if itemss_s > 0 then
+
+rayfield:Notify({
+Title = "Success!",
+Content = "There are " .. itemss_s .. " Items",
+Duration = 6.5,
+Image = "hammer",
+})
+else
+
+rayfield:Notify({
+Title = "No Items Found",
+Content = "Bro i think this round is bug.",
+Duration = 6.5,
+Image = "hammer",
+})
+end
+end,
+})
+
+local activeHighlights = {}
+local activeLabels = {}
+local activeLabels2 = {}
+
+local Toggle3 = Tab2:CreateToggle({
+Name = "👁️ Esp Items",
+CurrentValue = false,
+Flag = "Toggle1",
+Callback = function(bool)
+
+if bool then
+for _, items in pairs(itemsFolder:GetChildren()) do
+if items:IsA("Model") and (items.PrimaryPart or items:FindFirstChildOfClass("BasePart")) then
+local highlight = Instance.new("Highlight")
+highlight.FillColor = Color3.fromRGB(255, 255, 0) -- Yellow
+highlight.FillTransparency = 0.9
+highlight.OutlineColor = Color3.fromRGB(255, 255, 0)
+highlight.OutlineTransparency = 0
+highlight.Parent = items
+
+
+local gui = Instance.new("BillboardGui")
+gui.AlwaysOnTop = true
+gui.Size = UDim2.new(2, 0, 0, 20) -- Adjusted size
+gui.ExtentsOffset = Vector3.new(0, 0, 0) -- Position above the item
+gui.Parent = items.PrimaryPart or items:FindFirstChildOfClass("BasePart")
+
+local textLabel = Instance.new("TextLabel")
+textLabel.Text = items:GetAttribute("ItemName")
+textLabel.Size = UDim2.new(1, 0, 1, 0)
+textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+textLabel.BackgroundTransparency = 1
+textLabel.Font = Enum.Font.SourceSansBold
+textLabel.TextScaled = true
+textLabel.Parent = gui
+
+if items:GetAttribute("Uses") then
+local gui2 = Instance.new("BillboardGui")
+gui2.AlwaysOnTop = true
+gui2.Size = UDim2.new(2, 0, 0, 30) -- Adjusted size
+gui2.ExtentsOffset = Vector3.new(0, items.PrimaryPart.Size.Y / 2 + 9, 0) -- Position above the item
+gui2.Parent = items.PrimaryPart or items:FindFirstChildOfClass("BasePart")
+
+local textLabel2 = Instance.new("TextLabel")
+textLabel2.Text = items:GetAttribute("Uses")
+textLabel2.Size = UDim2.new(1, 0, 1, 0)
+textLabel2.TextColor3 = Color3.fromRGB(255, 255, 0)
+textLabel2.BackgroundTransparency = 1
+textLabel2.Font = Enum.Font.SourceSansBold
+textLabel2.TextScaled = true
+textLabel2.Parent = gui2
+
+activeLabels2[items] = gui2
+end
+
+activeHighlights[items] = highlight
+activeLabels[items] = gui
+end
+end
+else
+            -- CLEANUP: Destroy all stored highlights and labels when toggle is OFF
+            for _, highlight in pairs(activeHighlights) do
+                highlight:Destroy()
+            end
+            for _, label in pairs(activeLabels) do
+                label:Destroy()
+            end
+            for _, label2 in pairs(activeLabels2) do
+                label2:Destroy()
+            end
+            activeHighlights = {} 
+            activeLabels = {}
+            activeLabels2 = {}
+end
+end,
+})
+
+
+local Section4 = Tab2:CreateSection("Target item")
+
+local Dropdown1 = Tab2:CreateDropdown({
+   Name = "🛠️ Select item",
+   Options = getItemsList(),
+   CurrentOption = {"None"},
+   MultipleOptions = false,
+   Flag = "Dropdown1",
+   Callback = function(OptionsTable)
+   current_item = OptionsTable[1]
+   print("Selected item: " .. current_item)
+   end,
+})
+
+local Button3 = Tab2:CreateButton({
+   Name = "🔄 Refresh Item list",
+   Callback = function()
+   Dropdown1:Refresh(getItemsList())
+   end,
+})
+
+local Button4 = Tab2:CreateButton({
+   Name = "➡️ Bring item",
+   Callback = function()
+    if current_item == nil then return end
+           for _, item in pairs(itemsFolder:GetChildren()) do
+            if item:IsA("Model") and item:GetAttribute("ItemName") == current_item then
+             item:PivotTo(root.CFrame * CFrame.new(0,0,-4))
+            end
+        end
+   end,
+})
+
+local Button5 = Tab2:CreateButton({
+   Name = "🔨 Pick up item",
+   Callback = function()
+    if current_item == nil then return end
+           for _, item in pairs(itemsFolder:GetChildren()) do
+            if item:IsA("Model") and item:GetAttribute("ItemName") == current_item then
+             item:PivotTo(root.CFrame * CFrame.new(0,0,0))
+             task.wait()
+            game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("RequestItemPickup"):FireServer(item)
+            end
+        end
+   end,
+})
+
+local Tab3 = Window:CreateTab("Visual", "eye")
+local Section5 = Tab3:CreateSection("Visual")
+
+local FB = Tab3:CreateToggle({
+   Name = "🔦 Full Bright",
+   CurrentValue = false,
+   Flag = "Toggle1",
+   Callback = function(bool)
+
+   local normalBright = 0
+   local normalAmbientCo = Color3.fromRGB(0,0,0)
+
+   if bool then
+    lighting.GlobalShadows = false
+    lighting.Brightness = 2
+    lighting.Ambient = Color3.fromRGB(255,255,255)
+   else
+    lighting.GlobalShadows = true
+    lighting.Brightness = normalBright
+    lighting.Ambient = normalAmbientCo
+   end
+   end,
+})
+
+local Tab4 = Window:CreateTab("Player", "user-round-cog")
+local Section6 = Tab4:CreateSection("Player")
+
+local Slider1 = Tab4:CreateSlider({
+   Name = "🏃 Select Walk Speed",
+   Range = {10, 100},
+   Increment = 1,
+   Suffix = "Walk speed",
+   CurrentValue = 10,
+   Flag = "Slider1",
+   Callback = function(number)
+   current_ws = number
+   end,
+})
+
+local Button6 = Tab4:CreateButton({
+   Name = "🏃 Apply Walkspeed",
+   Callback = function()
+   hum.WalkSpeed = current_ws
+   end,
+})
+
+local Section7 = Tab4:CreateSection("Escape Mode")
+
+local Section8 = Tab4:CreateSection("❎ Saved Position | None")
+
+local Button7 = Tab4:CreateButton({
+   Name = "🚩 Save Position",
+   Callback = function()
+   current_pos = root.Position
+
+rayfield:Notify({
+Title = "Hey!",
+Content = "Save position successfully.",
+Duration = 3.5,
+Image = "map-pin-plus",
+})
+
+Section8:Set("✅ Saved Position | " .. current_pos.X .. current_pos.Y .. current_pos.Z)
+
+   end,
+})
+
+local Button8 = Tab4:CreateButton({
+   Name = "🚩 Reset Position",
+   Callback = function()
+   current_pos = Vector3.new(0,0,0)
+
+rayfield:Notify({
+Title = "Hey!",
+Content = "remove position successfully.",
+Duration = 3.5,
+Image = "map-pin-off",
+})
+
+Section8:Set("❎ Saved Position | None")
+
+   end,
+})
+
+local Section9 = Tab4:CreateSection("Teleport")
+
+local Button9 = Tab4:CreateButton({
+   Name = "🚩 Teleport back to saved position",
+   Callback = function()
+   root.Position = current_pos
+
+rayfield:Notify({
+Title = "Hey!",
+Content = "teleported successfully.",
+Duration = 3.5,
+Image = "map-pin-pen",
+})
+   end,
+})

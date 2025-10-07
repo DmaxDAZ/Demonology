@@ -527,7 +527,7 @@ Image = "map-pin-pen",
 })
 
 local Tab5 = Window:CreateTab("Troll", "server")
-local Section10 = Tab4:CreateSection("Troll")
+local Section10 = Tab5:CreateSection("Troll")
 
 local ligon = Tab5:CreateButton({
     Name = "🪫 Power off",
@@ -553,7 +553,7 @@ local doors = Tab5:CreateButton({
 
         for _, doorModel in pairs(doorsFolder:GetChildren()) do
             if doorModel:IsA("Model") then
-                event:FireServer(doorModel)
+                event:FireServer(doorModel.Name)
                 task.wait(0.5)
             end
         end

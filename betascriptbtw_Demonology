@@ -207,7 +207,7 @@ local function getLatestItem(itemName)
 	return newest
 end
 
--- create a drop toggle for an item
+-- drop item toggle without anchoring
 local function dropItemToggle(tab, name, itemName, offset, showTemp)
 	tab:CreateToggle({
 		Name = name,
@@ -217,7 +217,7 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 			local char = PL.Character or PL.CharacterAdded:Wait()
 			local dropEvent = RSStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
 
-			-- Drop all items to refresh inventory sync
+			-- Drop all items to sync inventory
 			for i = 1, 3 do
 				dropEvent:FireServer("InvSlot"..i)
 			end
@@ -237,13 +237,18 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 
 					local it = getLatestItem(itemName)
 					if it and it.Parent then
-						-- Smooth follow using Lerp
-						local targetCFrame = CFrame.new(hrp.Position + offset)
-						local currentCFrame = it:GetPivot()
-						local newCFrame = currentCFrame:Lerp(targetCFrame, 0.14) -- smooth
-						safePivot(it, newCFrame)
+						local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
+						if pp then
+							-- Disable collisions while following
+							pp.CanCollide = false
 
-						-- Update thermometer screen reading
+							-- Smoothly move item without anchoring
+							local targetCFrame = hrp.CFrame:ToWorldSpace(CFrame.new(offset))
+							local newCFrame = it:GetPivot():Lerp(targetCFrame, 0.12)
+							safePivot(it, newCFrame)
+						end
+
+						-- Update thermometer display
 						if showTemp and it:FindFirstChild("Screen") then
 							local screen = it.Screen
 							local surfaceGui = screen:FindFirstChild("SurfaceGui")
@@ -258,6 +263,11 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 			else
 				local it = getLatestItem(itemName)
 				if it then
+					local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
+					if pp then
+						pp.CanCollide = true -- re-enable collisions
+					end
+					-- Drop item slightly above player
 					safePivot(it, char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
 				end
 				if toggles[itemName] then
@@ -270,12 +280,13 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 end
 
 -- create toggles
-dropItemToggle(Tab1, "📟 Drop EMF Reader near ghost", "6", Vector3.new(0, -2, -3))
+dropItemToggle(Tab1, "📟 Drop EMF Reader near ghost", "6", Vector3.new(0, 2, -3))
 dropItemToggle(Tab1, "👻 Drop Laser Projector near ghost", "8", Vector3.new(0, 2, 0))
-dropItemToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 0, 5))
-dropItemToggle(Tab1, "📖 Drop Spirit Book near ghost", "3", Vector3.new(0, -3, 0))
-dropItemToggle(Tab1, "🌹 Drop Flower Pot near ghost", "9", Vector3.new(0, -3, 0))
-dropItemToggle(Tab1, "🌡️ Drop Thermometer near ghost", "2", Vector3.new(0, 0, -3), true)
+dropItemToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 2, 5))
+dropItemToggle(Tab1, "📖 Drop Spirit Book near ghost", "3", Vector3.new(0, 2, 0))
+dropItemToggle(Tab1, "🌹 Drop Flower Pot near ghost", "9", Vector3.new(0, 2, 0))
+dropItemToggle(Tab1, "🌡️ Drop Thermometer near ghost", "2", Vector3.new(0, 2, -3), true)
+
 
 
 

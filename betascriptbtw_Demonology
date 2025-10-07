@@ -225,9 +225,9 @@ local function createDropToggle(tab, name, itemID, offset)
     })
 end
 
-createDropToggle(Tab1, "📟 Drop EMF Reader near ghost", "6", Vector3.new(0, -2, -3))
-createDropToggle(Tab1, "📟 Drop Laser Projector near ghost", "8", Vector3.new(0, 0, 3))
-createDropToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 0, 4))
+createDropToggle(Tab1, "📟 Drop EMF Reader near ghost", "6", Vector3.new(0, 0, 0))
+createDropToggle(Tab1, "📟 Drop Laser Projector near ghost", "8", Vector3.new(0, 0, 0))
+createDropToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 0, 5))
 
 local lop4
 local temperature = "Waiting for thermometer to check"

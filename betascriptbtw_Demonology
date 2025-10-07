@@ -191,23 +191,21 @@ local function safePivot(model, cframe)
 	end
 end
 
--- get newest dropped item by name (workspace.Items only)
-local function getLatestItem(itemName)
+-- get all items by name (workspace.Items only)
+local function getAllItems(itemName)
 	local folder = workspace:FindFirstChild("Items")
-	if not folder then return nil end
+	if not folder then return {} end
 
-	local newest
+	local items = {}
 	for _, v in ipairs(folder:GetChildren()) do
 		if v.Name == itemName then
-			if not newest or v:GetDebugId() > newest:GetDebugId() then
-				newest = v
-			end
+			table.insert(items, v)
 		end
 	end
-	return newest
+	return items
 end
 
--- drop item toggle without collision changes
+-- drop item toggle that follows ghost and works for all players’ items
 local function dropItemToggle(tab, name, itemName, offset, showTemp)
 	tab:CreateToggle({
 		Name = name,
@@ -235,39 +233,46 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 					local hrp = ghostModel:FindFirstChild("HumanoidRootPart")
 					if not hrp then return end
 
-					local it = getLatestItem(itemName)
-					if it and it.Parent then
-						local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
-						if pp then
-							it.PrimaryPart = pp
-							-- teleport to ghost (fast Lerp for smooth but stable follow)
-							local targetCFrame = hrp.CFrame:ToWorldSpace(CFrame.new(offset))
-							local newCFrame = it:GetPivot():Lerp(targetCFrame, 1) -- full catch-up
-							safePivot(it, newCFrame)
-						end
+					local items = getAllItems(itemName)
+					for _, it in ipairs(items) do
+						if it and it.Parent then
+							local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
+							if pp then
+								it.PrimaryPart = pp
 
-						-- update thermometer display
-						if showTemp and it:FindFirstChild("Screen") then
-							local screen = it.Screen
-							local surfaceGui = screen:FindFirstChild("SurfaceGui")
-							local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
-							local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
-							if label then
-								temperature = label.Text
+								-- teleport and rotate to ghost
+								local targetPos = hrp.Position + offset
+								local lookCFrame = CFrame.new(pp.Position, hrp.Position)
+								local targetCFrame = CFrame.new(targetPos)
+								local newCFrame = it:GetPivot():Lerp(targetCFrame:Lerp(lookCFrame, 0.5), 1)
+								safePivot(it, newCFrame)
+							end
+
+							-- update thermometer display
+							if showTemp and it:FindFirstChild("Screen") then
+								local screen = it.Screen
+								local surfaceGui = screen:FindFirstChild("SurfaceGui")
+								local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
+								local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
+								if label then
+									temperature = label.Text
+								end
 							end
 						end
 					end
 				end)
 			else
-				local it = getLatestItem(itemName)
-				if it then
-					local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
-					if pp then
-						-- leave physics normal
+				local items = getAllItems(itemName)
+				for _, it in ipairs(items) do
+					if it and it.Parent then
+						local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
+						if pp then
+							-- leave physics normal
+						end
+						safePivot(it, char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
 					end
-					-- drop item slightly above player
-					safePivot(it, char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
 				end
+
 				if toggles[itemName] then
 					toggles[itemName]:Disconnect()
 					toggles[itemName] = nil
@@ -277,7 +282,7 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 	})
 end
 
--- create toggles
+-- create toggles for all items
 dropItemToggle(Tab1, "📟 Drop EMF Reader near ghost", "6", Vector3.new(0, 2, -3))
 dropItemToggle(Tab1, "👻 Drop Laser Projector near ghost", "8", Vector3.new(0, 2, 0))
 dropItemToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 2, 5))

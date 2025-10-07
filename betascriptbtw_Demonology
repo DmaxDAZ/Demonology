@@ -429,8 +429,9 @@ local NOC = Tab4:CreateToggle({
    Callback = function(bool)
     noclip = bool
     print(noclip)
-   if noclip then
+   if bool then
     RunService.Stepped:Connect(function()
+      if noclip == false then return end
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") and part.CanCollide then
                 part.CanCollide = false

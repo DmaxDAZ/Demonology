@@ -248,7 +248,7 @@ local dropcamera = Tab1:CreateButton({
 
         local droppedItem = itemsFolder:FindFirstChild("1")
         if droppedItem then
-            local dropPos = hrp.Position + hrp.CFrame.LookVector * 4 + Vector3.new(0, 2.5, 0)
+            local dropPos = hrp.Position + hrp.CFrame.LookVector * 4 + Vector3.new(0, 0, 0)
             
             droppedItem:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
         else

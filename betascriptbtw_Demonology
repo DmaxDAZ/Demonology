@@ -246,7 +246,7 @@ local dropcamera = Tab1:CreateButton({
 
         local droppedItem = itemsFolder:FindFirstChild("1")
         if droppedItem then
-            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 2.5, 4) * CFrame.Angles(0,math.rad(180),0))
+            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 2.5, 4) * CFrame.Angles(0,math.rad(-180),0))
         else
             warn("❌ ไม่พบ EMF Reader ที่ drop แล้ว")
         end

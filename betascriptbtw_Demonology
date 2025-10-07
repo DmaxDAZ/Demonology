@@ -313,7 +313,7 @@ local stat5 = Tab1:CreateSection("Visual model: | Unknown")
 local stat6 = Tab1:CreateSection("Ghost Orb: | Not have")
 local stat7 = Tab1:CreateSection("Temperature | waiting thermometer to check")
 
-RunService.RenderStepped:Connect(function()
+RunService.Stepped:Connect(function()
     local currentGhost = workspace:FindFirstChild("Ghost")
     if currentGhost then
         stat1:Set("Current room | "..(currentGhost:GetAttribute("CurrentRoom") or "Unknown"))

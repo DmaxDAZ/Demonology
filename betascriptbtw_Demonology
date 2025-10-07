@@ -1,694 +1,258 @@
-local player = game.Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-local root = char:FindFirstChild("HumanoidRootPart")
-local hum = char:FindFirstChild("Humanoid")
-
-local ghost = game.Workspace:FindFirstChild("Ghost")
-local itemsFolder = workspace:FindFirstChild("Items")
-local lighting = game:GetService("Lighting")
+-- Services
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
 
-local skinwalker = 0
-local itemss_s = 0
+-- Player
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
+local hum = char:WaitForChild("Humanoid")
 
-local current_item = nil
-local current_ws = 10
-local current_pos = nil
+-- Ghost
+local ghost = Workspace:FindFirstChild("Ghost")
+Workspace.ChildAdded:Connect(function(c)
+    if c.Name == "Ghost" then ghost = c end
+end)
 
+-- Items
+local itemsFolder = Workspace:FindFirstChild("Items")
+if not itemsFolder then warn("Items folder not found!") end
+
+-- Toggles / State
 local noclip = false
 local fullbright = false
+local temperature = "N/A"
+local savedPosition = nil
+local toggles = {}
 
- local function getItemsList()
-    local Items = {}
-    for _, child in pairs(itemsFolder:GetChildren()) do
-        if child:IsA("Model") then
-            table.insert(Items, child:GetAttribute("ItemName"))
+-- =========================
+-- UTILITY FUNCTIONS
+-- =========================
+local function getItemsList()
+    local list = {}
+    if itemsFolder then
+        for _, child in pairs(itemsFolder:GetChildren()) do
+            if child:IsA("Model") then
+                table.insert(list, child:GetAttribute("ItemName") or child.Name)
+            end
         end
     end
-    return Items
+    return list
 end
 
-
-
-local rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Window = rayfield:CreateWindow({
-   Name = "[UPD] Demonology🕯️ | Anchor Hub ⚓",
-   Icon = 0,
-   LoadingTitle = "[UPD] Demonology🕯️",
-   LoadingSubtitle = "Script Version 1.1.2",
-   ShowText = "Rayfield",
-   Theme = "Ocean",
-
-   ToggleUIKeybind = "K",
-
-   DisableRayfieldPrompts = true,
-   DisableBuildWarnings = false,
-
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = nil,
-      FileName = "Big Hub"
-   },
-
-   Discord = {
-      Enabled = false,
-      Invite = "noinvitelink",
-      RememberJoins = true
-   },
-
-   KeySystem = true,
-   KeySettings = {
-      Title = "[UPD] Demonology🕯️ | Anchor Hub",
-      Subtitle = "Key System",
-      Note = "The key is '67' this is only a testing key system", 
-      FileName = "Key",
-      SaveKey = true, 
-      GrabKeyFromSite = false,
-      Key = {"67"}
-   }
-})
-
-local Tab1 = Window:CreateTab("Ghost", "ghost")
-local Section1 = Tab1:CreateSection("Ghost")
-
-local Button1 = Tab1:CreateButton({
-   Name = "✋ Check handprints",
-   Callback = function()
-        skinwalker = 0
-        local handprintsFolder = workspace:FindFirstChild("Handprints")
-        
-        if not handprintsFolder then
-            rayfield:Notify({
-              Title = "Error!",
-              Content = "The game has been updated or handprint folder is missing!",
-              Duration = 6.5,
-              Image = "hand",
-            })
-            return
-        end
-
-        for _, printPart in pairs(handprintsFolder:GetChildren()) do
-            -- A simple check for existence, assuming any part inside the folder is a handprint
-            if printPart:IsA("Part") or printPart:IsA("Model") then
-                -- The previous check `if not pri:FindFirstChildOfClass("Part")` was flawed. 
-                -- We assume any direct child of 'Handprints' is a handprint if it's a Part/Model.
-                skinwalker += 1
-                print("Calculated Handprint: " .. printPart.Name .. "!")
-            end
-        end
-
-        if skinwalker > 0 then
-
-            rayfield:Notify({
-              Title = "Success!",
-              Content = "There are " .. skinwalker .. " Handprints",
-              Duration = 6.5,
-              Image = "hand",
-            })
-        else
-
-            rayfield:Notify({
-              Title = "No Handprints Found",
-              Content = "No Handprints are currently visible or they haven't spawned yet.",
-              Duration = 6.5,
-              Image = "hand",
-            })
-        end
-   end,
-})
-
-local Toggle1 = Tab1:CreateToggle({
-   Name = "👻 Ghost pov",
-   CurrentValue = false,
-   Flag = "Toggle1",
-   Callback = function(bool)
-    if bool then
-    game.Workspace.Camera.CameraSubject = ghost.Humanoid
+-- =========================
+-- VISUAL FUNCTIONS
+-- =========================
+local fullbrightConnection
+local function setFullBright(enable)
+    fullbright = enable
+    if enable then
+        fullbrightConnection = RunService.Stepped:Connect(function()
+            Lighting.GlobalShadows = false
+            Lighting.Brightness = 2
+            Lighting.Ambient = Color3.fromRGB(255,255,255)
+        end)
     else
-    game.Workspace.Camera.CameraSubject = char.Humanoid
+        if fullbrightConnection then fullbrightConnection:Disconnect() fullbrightConnection = nil end
+        Lighting.GlobalShadows = true
+        Lighting.Brightness = 0
+        Lighting.Ambient = Color3.fromRGB(0,0,0)
     end
-   end,
-})
-
-local Toggle2 = Tab1:CreateToggle({
-   Name = "👻 Show Ghost's body",
-   CurrentValue = false,
-   Flag = "Toggle1",
-   Callback = function(bool)
-    if bool then
-        for _, meshPart in pairs(ghost.VisibleParts:GetChildren()) do
-            if meshPart:IsA("MeshPart") then
-             meshPart.Transparency = 0
-            end
-        end
-    else
-        for _, meshPart in pairs(ghost.VisibleParts:GetChildren()) do
-            if meshPart:IsA("MeshPart") then
-             meshPart.Transparency = 1
-            end
-        end
-    end
-   end,
-})
-
-local activeHighlights_Gl = {}
-
-local Gl = Tab1:CreateToggle({
-   Name = "👻 Esp Ghost",
-   CurrentValue = false,
-   Flag = "Toggle1",
-   Callback = function(bool)
-    if bool then
-    local highlight = Instance.new("Highlight")
-    highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Yellow
-    highlight.FillTransparency = 0.5
-    highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
-    highlight.OutlineTransparency = 0
-    highlight.Parent = ghost
-
-    activeHighlights_Gl = highlight
-    else
-    if activeHighlights_Gl and activeHighlights_Gl:IsA("Highlight") then
-        activeHighlights_Gl:Destroy()
-    end
-    end
-   end,
-})
-
-local function dropItemNoclip(tab, name, itemName, offset, showTemp)
-    tab:CreateToggle({
-        Name = name,
-        CurrentValue = false,
-        Flag = name,
-        Callback = function(enabled)
-            local char = PL.Character or PL.CharacterAdded:Wait()
-            local rootPart = char:FindFirstChild("HumanoidRootPart")
-            if not rootPart then return end
-            local dropEvent = RSStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
-
-            -- Drop items to sync inventory
-            for i = 1, 3 do
-                dropEvent:FireServer("InvSlot"..i)
-            end
-            task.wait(0.3)
-
-            if toggles[itemName] then
-                toggles[itemName]:Disconnect()
-                toggles[itemName] = nil
-            end
-
-            if enabled then
-                toggles[itemName] = RS.RenderStepped:Connect(function(delta)
-                    local ghostModel = workspace:FindFirstChild("Ghost")
-                    if not ghostModel then return end
-                    local hrp = ghostModel:FindFirstChild("HumanoidRootPart")
-                    if not hrp then return end
-
-                    local items = getAllItems(itemName)
-                    if not items then return end
-
-                    for _, it in ipairs(items) do
-                        if it and it.Parent then
-                            local success, pp = pcall(function()
-                                return it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
-                            end)
-                            if success and pp and pp:IsA("BasePart") then
-                                setNetworkOwner(pp)
-                                pp.CanCollide = false
-
-                                -- BodyPosition
-                                local bp = pp:FindFirstChild("FollowBP") or Instance.new("BodyPosition")
-                                bp.Name = "FollowBP"
-                                bp.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-                                bp.D = 20
-                                bp.P = 2000
-                                if not bp.Parent then bp.Parent = pp end
-                                bp.Position = hrp.Position + offset
-
-                                -- BodyGyro
-                                local bg = pp:FindFirstChild("FollowBG") or Instance.new("BodyGyro")
-                                bg.Name = "FollowBG"
-                                bg.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-                                bg.D = 20
-                                bg.P = 2000
-                                if not bg.Parent then bg.Parent = pp end
-                                bg.CFrame = CFrame.new(pp.Position, hrp.Position)
-
-                                -- Thermometer update
-                                if showTemp and it:FindFirstChild("Screen") then
-                                    local screen = it.Screen
-                                    local surfaceGui = screen:FindFirstChild("SurfaceGui")
-                                    local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
-                                    local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
-                                    if label then
-                                        temperature = label.Text
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end)
-            else
-                -- ปิด toggle: วาปกลับไปตัวเรา
-                local items = getAllItems(itemName)
-                for _, it in ipairs(items) do
-                    if it and it.Parent then
-                        local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
-                        if pp and pp:IsA("BasePart") then
-                            pp.CanCollide = true
-                            pp:SetNetworkOwner(nil)
-
-                            local bp = pp:FindFirstChild("FollowBP")
-                            if bp then bp:Destroy() end
-                            local bg = pp:FindFirstChild("FollowBG")
-                            if bg then bg:Destroy() end
-
-                            if rootPart then
-                                pp.CFrame = rootPart.CFrame + Vector3.new(0,3,0)
-                            end
-                        end
-                    end
-                end
-
-                if toggles[itemName] then
-                    toggles[itemName]:Disconnect()
-                    toggles[itemName] = nil
-                end
-            end
-        end
-    })
 end
 
-
-
---------------------------------------------------------------------------------
--- Create Toggles
---------------------------------------------------------------------------------
-
-dropItemNoclip(Tab1, "📟 EMF Reader", "6", Vector3.new(0, 2, -3))
-dropItemNoclip(Tab1, "👻 Laser Projector", "8", Vector3.new(0, 2, 0))
-dropItemNoclip(Tab1, "📷 Camera", "1", Vector3.new(0, 2, 5))
-dropItemNoclip(Tab1, "📖 Spirit Book", "3", Vector3.new(0, 2, 0))
-dropItemNoclip(Tab1, "🌹 Flower Pot", "9", Vector3.new(0, 2, 0))
-dropItemNoclip(Tab1, "🌡️ Thermometer", "2", Vector3.new(0, 2, -3), true)
-
---------------------------------------------------------------------------------
--- Ghost Status GUI
---------------------------------------------------------------------------------
-
-local ghost = game.Workspace:FindFirstChild("Ghost")
-game.Workspace.ChildAdded:Connect(function(child)
-    if child.Name == "Ghost" then
-        ghost = child
-    end
-end)
-
-local Section2 = Tab1:CreateSection("Ghost Status 👻")
-local stat1 = Tab1:CreateSection("Current room: | Unknown")
-local stat2 = Tab1:CreateSection("Age: | Unknown")
-local stat3 = Tab1:CreateSection("Gender: | Unknown")
-local stat4 = Tab1:CreateSection("Favorite room: | Unknown")
-local stat5 = Tab1:CreateSection("Visual model: | Unknown")
-local stat6 = Tab1:CreateSection("Ghost Orb: | Not have")
-local stat7 = Tab1:CreateSection("Temperature | waiting thermometer to check")
-
-RunService.Stepped:Connect(function()
-    local currentGhost = workspace:FindFirstChild("Ghost")
-    if currentGhost then
-        stat1:Set("Current room | "..(currentGhost:GetAttribute("CurrentRoom") or "Unknown"))
-        stat2:Set("Age | "..(currentGhost:GetAttribute("Age") or "Unknown"))
-        stat3:Set("Gender | "..(currentGhost:GetAttribute("Gender") or "Unknown"))
-        stat4:Set("Favorite room | "..(currentGhost:GetAttribute("FavoriteRoom") or "Unknown"))
-        stat5:Set("Visual model | "..(currentGhost:GetAttribute("VisualModel") or "Unknown"))
+-- =========================
+-- PLAYER FUNCTIONS
+-- =========================
+local noclipConnection
+local function toggleNoclip(enable)
+    noclip = enable
+    if enable then
+        noclipConnection = RunService.Stepped:Connect(function()
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = false end
+            end
+        end)
     else
-        stat1:Set("Current room | Unknown")
-        stat2:Set("Age | Unknown")
-        stat3:Set("Gender | Unknown")
-        stat4:Set("Favorite room | Unknown")
-        stat5:Set("Visual model | Unknown")
+        if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = true end
+        end
     end
+end
 
-    if workspace:FindFirstChild("GhostOrb") then
-        stat6:Set("Ghost Orb | Have")
+local function savePosition()
+    savedPosition = root.CFrame
+end
+
+local function teleportSavedPosition()
+    if savedPosition then
+        root.CFrame = savedPosition
+    end
+end
+
+-- =========================
+-- GHOST FUNCTIONS
+-- =========================
+local ghostHighlight
+local function setGhostPOV(enable)
+    if ghost and ghost:FindFirstChild("Humanoid") then
+        Workspace.CurrentCamera.CameraSubject = enable and ghost.Humanoid or char.Humanoid
+    end
+end
+
+local function setGhostVisible(enable)
+    if ghost and ghost:FindFirstChild("VisibleParts") then
+        for _, part in pairs(ghost.VisibleParts:GetChildren()) do
+            if part:IsA("MeshPart") then
+                part.Transparency = enable and 0 or 1
+            end
+        end
+    end
+end
+
+local function toggleGhostESP(enable)
+    if enable then
+        if ghost then
+            ghostHighlight = Instance.new("Highlight")
+            ghostHighlight.FillColor = Color3.fromRGB(255,0,0)
+            ghostHighlight.FillTransparency = 0.5
+            ghostHighlight.OutlineColor = Color3.fromRGB(255,0,0)
+            ghostHighlight.OutlineTransparency = 0
+            ghostHighlight.Parent = ghost
+        end
     else
-        stat6:Set("Ghost Orb | Not have")
+        if ghostHighlight then ghostHighlight:Destroy() ghostHighlight = nil end
     end
-
-    stat7:Set("Temperature | "..temperature)
-end)
-
-
-local Tab2 = Window:CreateTab("Items", "hammer")
-local Section3 = Tab2:CreateSection("Items")
-
-local Button2 = Tab2:CreateButton({
-    Name = "🔢 Count current Items",
-Callback = function()
-local itemss_s = 0 -- **Changed to local for best practice**
-
-if not itemsFolder then
-rayfield:Notify({
-Title = "Error!",
-Content = "The game has been updated or Items folder is missing!",
- Duration = 6.5,
-Image = "hammer",
-})
-return
 end
 
-for _, tool in pairs(itemsFolder:GetChildren()) do
-              if tool:IsA("Model") then
- itemss_s += 1
- print("Calculated Item: " .. tool.Name .. "!")
- end
-end
-
- if itemss_s > 0 then
-
-rayfield:Notify({
-Title = "Success!",
-Content = "There are " .. itemss_s .. " Items",
-Duration = 6.5,
-Image = "hammer",
-})
-else
-
-rayfield:Notify({
-Title = "No Items Found",
-Content = "Bro i think this round is bug.",
-Duration = 6.5,
-Image = "hammer",
-})
-end
-end,
-})
-
+-- =========================
+-- ITEMS FUNCTIONS
+-- =========================
 local activeHighlights = {}
 local activeLabels = {}
-local activeLabels2 = {}
 
-local Toggle3 = Tab2:CreateToggle({
-Name = "👁️ Esp Items",
-CurrentValue = false,
-Flag = "Toggle1",
-Callback = function(bool)
+local function toggleItemsESP(enable)
+    if not itemsFolder then return end
+    if enable then
+        for _, item in pairs(itemsFolder:GetChildren()) do
+            if item:IsA("Model") and (item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")) then
+                local highlight = Instance.new("Highlight")
+                highlight.FillColor = Color3.fromRGB(255,255,0)
+                highlight.FillTransparency = 0.8
+                highlight.OutlineColor = Color3.fromRGB(255,255,0)
+                highlight.OutlineTransparency = 0
+                highlight.Parent = item
+                activeHighlights[item] = highlight
 
-if bool then
-for _, items in pairs(itemsFolder:GetChildren()) do
-if items:IsA("Model") and (items.PrimaryPart or items:FindFirstChildOfClass("BasePart")) then
-local highlight = Instance.new("Highlight")
-highlight.FillColor = Color3.fromRGB(255, 255, 0) -- Yellow
-highlight.FillTransparency = 0.9
-highlight.OutlineColor = Color3.fromRGB(255, 255, 0)
-highlight.OutlineTransparency = 0
-highlight.Parent = items
+                local gui = Instance.new("BillboardGui")
+                gui.AlwaysOnTop = true
+                gui.Size = UDim2.new(2,0,0,20)
+                gui.ExtentsOffset = Vector3.new(0,2,0)
+                gui.Parent = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")
 
-
-local gui = Instance.new("BillboardGui")
-gui.AlwaysOnTop = true
-gui.Size = UDim2.new(2, 0, 0, 20) -- Adjusted size
-gui.ExtentsOffset = Vector3.new(0, 0, 0) -- Position above the item
-gui.Parent = items.PrimaryPart or items:FindFirstChildOfClass("BasePart")
-
-local textLabel = Instance.new("TextLabel")
-textLabel.Text = items:GetAttribute("ItemName")
-textLabel.Size = UDim2.new(1, 0, 1, 0)
-textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-textLabel.BackgroundTransparency = 1
-textLabel.Font = Enum.Font.SourceSansBold
-textLabel.TextScaled = true
-textLabel.Parent = gui
-
-if items:GetAttribute("Uses") then
-local gui2 = Instance.new("BillboardGui")
-gui2.AlwaysOnTop = true
-gui2.Size = UDim2.new(2, 0, 0, 30) -- Adjusted size
-gui2.ExtentsOffset = Vector3.new(0, items.PrimaryPart.Size.Y / 2 + 9, 0) -- Position above the item
-gui2.Parent = items.PrimaryPart or items:FindFirstChildOfClass("BasePart")
-
-local textLabel2 = Instance.new("TextLabel")
-textLabel2.Text = items:GetAttribute("Uses")
-textLabel2.Size = UDim2.new(1, 0, 1, 0)
-textLabel2.TextColor3 = Color3.fromRGB(255, 255, 0)
-textLabel2.BackgroundTransparency = 1
-textLabel2.Font = Enum.Font.SourceSansBold
-textLabel2.TextScaled = true
-textLabel2.Parent = gui2
-
-activeLabels2[items] = gui2
-end
-
-activeHighlights[items] = highlight
-activeLabels[items] = gui
-end
-end
-else
-            -- CLEANUP: Destroy all stored highlights and labels when toggle is OFF
-            for _, highlight in pairs(activeHighlights) do
-                highlight:Destroy()
-            end
-            for _, label in pairs(activeLabels) do
-                label:Destroy()
-            end
-            for _, label2 in pairs(activeLabels2) do
-                label2:Destroy()
-            end
-            activeHighlights = {} 
-            activeLabels = {}
-            activeLabels2 = {}
-end
-end,
-})
-
-
-local Section4 = Tab2:CreateSection("Target item")
-
-local Dropdown1 = Tab2:CreateDropdown({
-   Name = "🛠️ Select item",
-   Options = getItemsList(),
-   CurrentOption = {"None"},
-   MultipleOptions = false,
-   Flag = "Dropdown1",
-   Callback = function(OptionsTable)
-   current_item = OptionsTable[1]
-   print("Selected item: " .. current_item)
-   end,
-})
-
-local Button3 = Tab2:CreateButton({
-   Name = "🔄 Refresh Item list",
-   Callback = function()
-   Dropdown1:Refresh(getItemsList())
-   end,
-})
-
-local Button4 = Tab2:CreateButton({
-   Name = "➡️ Bring item",
-   Callback = function()
-    if current_item == nil then return end
-           for _, item in pairs(itemsFolder:GetChildren()) do
-            if item:IsA("Model") and item:GetAttribute("ItemName") == current_item then
-             item:PivotTo(root.CFrame * CFrame.new(0,0,-4))
+                local label = Instance.new("TextLabel")
+                label.Text = item:GetAttribute("ItemName") or item.Name
+                label.Size = UDim2.new(1,0,1,0)
+                label.TextColor3 = Color3.fromRGB(255,255,255)
+                label.BackgroundTransparency = 1
+                label.TextScaled = true
+                label.Font = Enum.Font.SourceSansBold
+                label.Parent = gui
+                activeLabels[item] = gui
             end
         end
-   end,
-})
+    else
+        for _, hl in pairs(activeHighlights) do hl:Destroy() end
+        for _, gui in pairs(activeLabels) do gui:Destroy() end
+        activeHighlights = {}
+        activeLabels = {}
+    end
+end
 
-local Button5 = Tab2:CreateButton({
-   Name = "🔨 Pick up item",
-   Callback = function()
-    if current_item == nil then return end
-           for _, item in pairs(itemsFolder:GetChildren()) do
-            if item:IsA("Model") and item:GetAttribute("ItemName") == current_item then
-             item:PivotTo(root.CFrame * CFrame.new(0,0,0))
-             task.wait()
-            game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("RequestItemPickup"):FireServer(item)
+local function dropItemNoclip(itemName, offset)
+    if toggles[itemName] then toggles[itemName]:Disconnect() toggles[itemName] = nil end
+    toggles[itemName] = RunService.RenderStepped:Connect(function()
+        for _, item in pairs(itemsFolder:GetChildren()) do
+            if item:IsA("Model") and item:GetAttribute("ItemName") == itemName then
+                local pp = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart", true)
+                if pp then
+                    pp.CanCollide = false
+                    pp.CFrame = root.CFrame + offset
+                end
             end
         end
-   end,
-})
-
-local Tab3 = Window:CreateTab("Visual", "eye")
-local Section5 = Tab3:CreateSection("Visual")
-
-local fullbrightConnection
-
-local FB = Tab3:CreateToggle({
-   Name = "🔦 Full Bright",
-   CurrentValue = false,
-   Flag = "Toggle1",
-   Callback = function(bool)
-
-   fullbright = bool
-
-   local normalBright = 0
-   local normalAmbientCo = Color3.fromRGB(0,0,0)
-
-   if bool then
-    fullbrightConnection = RunService.Stepped:Connect(function()
-        if not fullbright or not char then return end
-    lighting.GlobalShadows = false
-    lighting.Brightness = 2
-    lighting.Ambient = Color3.fromRGB(255,255,255)
     end)
-   else
+end
 
-            if fullbrightConnection then
-                fullbrightConnection:Disconnect()
-                fullbrightConnection = nil
-            end
-
-    lighting.GlobalShadows = true
-    lighting.Brightness = normalBright
-    lighting.Ambient = normalAmbientCo
-   end
-   end,
-})
-
-local Tab4 = Window:CreateTab("Player", "user-round-cog")
-local Section6 = Tab4:CreateSection("Player")
-
-local Slider1 = Tab4:CreateSlider({
-   Name = "🏃 Select Walk Speed",
-   Range = {10, 100},
-   Increment = 1,
-   Suffix = "Walk speed",
-   CurrentValue = 10,
-   Flag = "Slider1",
-   Callback = function(number)
-   current_ws = number
-   end,
-})
-
-local Button6 = Tab4:CreateButton({
-   Name = "🏃 Apply Walkspeed",
-   Callback = function()
-   hum.WalkSpeed = current_ws
-   end,
-})
-
-local reset = Tab4:CreateButton({
-   Name = "🔄 Reset Walk Speed Slider Value",
-   Callback = function()
-   Slider1:Set(10)
-   end,
-})
-
-local noclipConnection
-
-local NOC = Tab4:CreateToggle({
-    Name = "🧍 Noclip",
-    CurrentValue = false,
-    Flag = "Toggle1",
-    Callback = function(bool)
-        noclip = bool
-        print("Noclip:", noclip)
-        if bool then
-            noclipConnection = RunService.Stepped:Connect(function()
-                if not noclip or not char then return end
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
-                    end
-                end
-            end)
-        else
-            if noclipConnection then
-                noclipConnection:Disconnect()
-                noclipConnection = nil
-            end
-
-            if char then
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = true
-                    end
-                end
+-- =========================
+-- TROLL FUNCTIONS
+-- =========================
+local function powerOverload()
+    local roomsFolder = Workspace:WaitForChild("Map"):WaitForChild("Rooms")
+    local event = ReplicatedStorage:WaitForChild("Events"):WaitForChild("UseLightSwitch")
+    for _, room in pairs(roomsFolder:GetChildren()) do
+        if room:IsA("Folder") then
+            if not room:GetAttribute("LightsOn") then
+                event:FireServer(room)
             end
         end
-    end,
+    end
+end
+
+local function fixFuseBox()
+    ReplicatedStorage:WaitForChild("Events"):WaitForChild("ToggleFuseBox"):FireServer()
+end
+
+-- =========================
+-- GUI SETUP (Rayfield)
+-- =========================
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+local Window = Rayfield:CreateWindow({
+    Name = "[UPD] Demonology Hub",
+    LoadingTitle = "Demonology Hub",
+    Theme = "Ocean",
+    ConfigurationSaving = {Enabled=true, FolderName="DemonologyHub", FileName="Config"},
 })
 
+-- ===== Ghost Tab =====
+local GhostTab = Window:CreateTab("Ghost", "ghost")
+GhostTab:CreateToggle({Name="👻 Ghost POV", CurrentValue=false, Callback=setGhostPOV})
+GhostTab:CreateToggle({Name="👻 Show Ghost Body", CurrentValue=false, Callback=setGhostVisible})
+GhostTab:CreateToggle({Name="👻 Ghost ESP", CurrentValue=false, Callback=toggleGhostESP})
 
-local Section7 = Tab4:CreateSection("Escape Mode")
+-- ===== Items Tab =====
+local ItemsTab = Window:CreateTab("Items", "hammer")
+ItemsTab:CreateToggle({Name="👁️ ESP Items", CurrentValue=false, Callback=toggleItemsESP})
+ItemsTab:CreateDropdown({Name="🛠️ Select Item", Options=getItemsList(), CurrentOption={"None"}, Callback=function(opt) 
+    selectedItem = opt[1]
+end})
+ItemsTab:CreateButton({Name="➡️ Bring item", Callback=function()
+    if not selectedItem then return end
+    for _, item in pairs(itemsFolder:GetChildren()) do
+        if item:IsA("Model") and item:GetAttribute("ItemName") == selectedItem then
+            item:PivotTo(root.CFrame + Vector3.new(0,0,-4))
+        end
+    end
+end})
+ItemsTab:CreateButton({Name="📟 Drop Item Noclip", Callback=function()
+    if selectedItem then dropItemNoclip(selectedItem, Vector3.new(0,2,-3)) end
+end})
 
-local Section8 = Tab4:CreateSection("❎ Saved Position | None")
+-- ===== Player Tab =====
+local PlayerTab = Window:CreateTab("Player", "user-round-cog")
+PlayerTab:CreateSlider({Name="🏃 WalkSpeed", Range={10,100}, Increment=1, CurrentValue=16, Callback=function(val) hum.WalkSpeed = val end})
+PlayerTab:CreateToggle({Name="🧍 Noclip", CurrentValue=false, Callback=toggleNoclip})
+PlayerTab:CreateButton({Name="🚩 Save Position", Callback=savePosition})
+PlayerTab:CreateButton({Name="🚩 Teleport Saved", Callback=teleportSavedPosition})
 
-local Button7 = Tab4:CreateButton({
-   Name = "🚩 Save Position",
-   Callback = function()
-   current_pos = root.CFrame
+-- ===== Visual Tab =====
+local VisualTab = Window:CreateTab("Visual", "eye")
+VisualTab:CreateToggle({Name="🔦 FullBright", CurrentValue=false, Callback=setFullBright})
 
-rayfield:Notify({
-Title = "Hey!",
-Content = "Save position successfully.",
-Duration = 3.5,
-Image = "map-pin-plus",
-})
-
-Section8:Set("✅ Saved Position | " .. current_pos.X .. current_pos.Y .. current_pos.Z)
-
-   end,
-})
-
-local Button8 = Tab4:CreateButton({
-   Name = "🚩 Reset Position",
-   Callback = function()
-   current_pos = nil
-
-rayfield:Notify({
-Title = "Hey!",
-Content = "remove position successfully.",
-Duration = 3.5,
-Image = "map-pin-off",
-})
-
-Section8:Set("❎ Saved Position | None")
-
-   end,
-})
-
-local Section9 = Tab4:CreateSection("Teleport")
-
-local Button9 = Tab4:CreateButton({
-   Name = "🚩 Teleport back to saved position",
-   Callback = function()
-   root.CFrame = current_pos
-
-rayfield:Notify({
-Title = "Hey!",
-Content = "teleported successfully.",
-Duration = 3.5,
-Image = "map-pin-pen",
-})
-   end,
-})
-
-local Tab5 = Window:CreateTab("Troll", "server")
-local Section10 = Tab5:CreateSection("Troll")
-
-local ligon = Tab5:CreateButton({
-	Name = "💡 Power Overload (Troll)",
-	Callback = function()
-		local rs = game:GetService("ReplicatedStorage")
-		local event = rs:WaitForChild("Events"):WaitForChild("UseLightSwitch")
-		local roomsFolder = workspace:WaitForChild("Map"):WaitForChild("Rooms")
-
-		for _, room in pairs(roomsFolder:GetChildren()) do
-			if room:IsA("Folder") then
-				local isOn = room:GetAttribute("LightsOn")
-				if isOn == false or isOn == nil then
-					event:FireServer(room)
-				end
-			end
-		end
-	end,
-})
-
-
-local fixfuse = Tab5:CreateButton({
-    Name = "💡 Fix Fusebox",
-    Callback = function()
-    game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("ToggleFuseBox"):FireServer()
-    end,
-})
+-- ===== Troll Tab =====
+local TrollTab = Window:CreateTab("Troll", "server")
+TrollTab:CreateButton({Name="💡 Power Overload", Callback=powerOverload})
+TrollTab:CreateButton({Name="💡 Fix FuseBox", Callback=fixFuseBox})

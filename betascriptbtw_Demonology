@@ -278,7 +278,7 @@ local dropther = Tab1:CreateToggle({
                         end
 
                         local dropPos = hrp.Position + hrp.CFrame.LookVector * -3
-                        droppedItem:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
+                        droppedItem:PivotTo(CFrame.lookAt(dropPos, -hrp.Position))
                     end
                 end
             end)
@@ -288,7 +288,7 @@ local dropther = Tab1:CreateToggle({
                 lop4 = nil
             end
 
-            local droppedItem = itemsFolder:FindFirstChild("1")
+            local droppedItem = itemsFolder:FindFirstChild("2")
             if droppedItem and droppedItem:FindFirstChild("Handle") then
                 droppedItem.Handle.Anchored = false
             end

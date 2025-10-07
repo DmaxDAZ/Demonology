@@ -175,193 +175,127 @@ local Gl = Tab1:CreateToggle({
    end,
 })
 
-local lop1
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local droplaser = Tab1:CreateToggle({
-   Name = "📟 Drop EMF Reader near ghost",
-   CurrentValue = false,
-   Flag = "Toggle1", 
-   Callback = function(bool)
-           local rs = game:GetService("ReplicatedStorage")
-        local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
+local function createDropToggle(tab, name, itemID, offset)
+    local connection
+    return tab:CreateToggle({
+        Name = name,
+        CurrentValue = false,
+        Flag = name,
+        Callback = function(enabled)
+            local event = ReplicatedStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
+            local hrp = ghost:WaitForChild("HumanoidRootPart")
+            local char = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
+            local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
 
-        local hrp = ghost:WaitForChild("HumanoidRootPart")
-        local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
-        if not itemsFolder then
-            warn("❌ item folder is missing")
-            return
-        end
-
-        event:FireServer("InvSlot1")
-        event:FireServer("InvSlot2")
-        event:FireServer("InvSlot3")
-
-        task.wait(1)
-        if bool then
-        lop1 = RunService.RenderStepped:Connect(function()
-        if not bool or not char then return end
-               local droppedItem = itemsFolder:FindFirstChild("6")
-        if droppedItem then
-            droppedItem:WaitForChild("Handle").Anchored = true
-            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, -2, -3))
-        else
-            warn("❌ Not found EMF Reader dropped")
-        end
-        end)
-           else
-
-            if lop1 then
-                lop1:Disconnect()
-                lop1 = nil
-                itemsFolder:FindFirstChild("6").Handle.Anchored = false
+            if not itemsFolder then
+                warn("❌ Item folder is missing")
+                return
             end
-    end
-   end,
-})
 
+            -- Drop all slots (to make sure item appears)
+            event:FireServer("InvSlot1")
+            event:FireServer("InvSlot2")
+            event:FireServer("InvSlot3")
+            task.wait(1)
 
+            if enabled then
+                connection = RunService.RenderStepped:Connect(function()
+                    if not enabled or not char then return end
+                    local item = itemsFolder:FindFirstChild(itemID)
+                    if item and item:FindFirstChild("Handle") then
+                        item.Handle.Anchored = true
+                        item:PivotTo(CFrame.lookAt(hrp.Position + offset, hrp.Position))
+                    end
+                end)
+            else
+                if connection then
+                    connection:Disconnect()
+                    connection = nil
+                end
 
-
-local lop2
-
-local droplaser = Tab1:CreateToggle({
-   Name = "📟 Drop Laser Projector near ghost",
-   CurrentValue = false,
-   Flag = "Toggle1", 
-   Callback = function(bool)
-           local rs = game:GetService("ReplicatedStorage")
-        local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
-
-        local hrp = ghost:WaitForChild("HumanoidRootPart")
-        local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
-        if not itemsFolder then
-            warn("❌ item folder is missing")
-            return
-        end
-
-        event:FireServer("InvSlot1")
-        event:FireServer("InvSlot2")
-        event:FireServer("InvSlot3")
-
-        task.wait(1)
-        if bool then
-        lop2 = RunService.RenderStepped:Connect(function()
-        if not bool or not char then return end
-               local droppedItem = itemsFolder:FindFirstChild("8")
-        if droppedItem then
-            droppedItem:WaitForChild("Handle").Anchored = true
-            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 0, 3))
-        else
-            warn("❌ Not found Laser Projector dropped")
-        end
-        end)
-           else
-
-            if lop2 then
-                lop2:Disconnect()
-                lop2 = nil
-                itemsFolder:FindFirstChild("8").Handle.Anchored = false
+                local item = itemsFolder:FindFirstChild(itemID)
+                if item and item:FindFirstChild("Handle") then
+                    item.Handle.Anchored = false
+                end
             end
-    end
-   end,
-})
+        end,
+    })
+end
 
-
-
-
-local lop3
-
-local dropcamera = Tab1:CreateToggle({
-   Name = "📷 Drop Camera near ghost",
-   CurrentValue = false,
-   Flag = "Toggle1", 
-   Callback = function(bool)
-           local rs = game:GetService("ReplicatedStorage")
-        local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
-
-        local hrp = ghost:WaitForChild("HumanoidRootPart")
-        local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
-        if not itemsFolder then
-            warn("❌ item folder is missing")
-            return
-        end
-
-        event:FireServer("InvSlot1")
-        event:FireServer("InvSlot2")
-        event:FireServer("InvSlot3")
-
-        task.wait(1)
-        if bool then
-        lop3 = RunService.RenderStepped:Connect(function()
-        if not bool or not char then return end
-               local droppedItem = itemsFolder:FindFirstChild("1")
-        if droppedItem then
-            local dropPos = hrp.Position + hrp.CFrame.LookVector * 4 + Vector3.new(0, 0, 0)
-            droppedItem:WaitForChild("Handle").Anchored = true
-            droppedItem:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
-        else
-            warn("❌ not found Camera dropped")
-        end
-        end)
-           else
-
-            if lop3 then
-                lop3:Disconnect()
-                lop3 = nil
-                itemsFolder:FindFirstChild("1").Handle.Anchored = false
-            end
-    end
-   end,
-})
-
-
+createDropToggle(Tab1, "📟 Drop EMF Reader near ghost", "6", Vector3.new(0, -2, -3))
+createDropToggle(Tab1, "📟 Drop Laser Projector near ghost", "8", Vector3.new(0, 0, 3))
+createDropToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 0, 4))
 
 local lop4
 local temperature = "Waiting for thermometer to check"
 
 local dropther = Tab1:CreateToggle({
-   Name = "Drop Thermometer near ghost",
-   CurrentValue = false,
-   Flag = "Toggle1", 
-   Callback = function(bool)
-           local rs = game:GetService("ReplicatedStorage")
+    Name = "🌡️ Drop Thermometer near ghost",
+    CurrentValue = false,
+    Flag = "ToggleThermometer",
+    Callback = function(bool)
+        local rs = game:GetService("ReplicatedStorage")
         local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
+        local RunService = game:GetService("RunService")
 
         local hrp = ghost:WaitForChild("HumanoidRootPart")
+        local char = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
         local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
+
         if not itemsFolder then
-            warn("❌ item folder is missing")
+            warn("❌ Item folder is missing")
             return
         end
 
+        -- 🔹 Drop all inventory slots (just in case)
         event:FireServer("InvSlot1")
         event:FireServer("InvSlot2")
         event:FireServer("InvSlot3")
 
         task.wait(1)
-        if bool then
-        lop4 = RunService.RenderStepped:Connect(function()
-        if not bool or not char then return end
-               local droppedItem = itemsFolder:FindFirstChild("1")
-        if droppedItem then
-            local dropPos = hrp.Position + hrp.CFrame.LookVector * -3 + Vector3.new(0, 0, 0)
-            droppedItem:WaitForChild("Handle").Anchored = true
-            temperature = droppedItem:WaitForChild("Screen").SurfaceGui.Frame:FindFirstChildWhichIsA("TextLabel").ContentText
-            droppedItem:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
-        else
-            warn("❌ not found Camera dropped")
-        end
-        end)
-           else
 
+        if bool then
+            lop4 = RunService.RenderStepped:Connect(function()
+                if not bool or not char then return end
+
+                local droppedItem = itemsFolder:FindFirstChild("1")
+                if droppedItem then
+                    local handle = droppedItem:FindFirstChild("Handle")
+                    local screen = droppedItem:FindFirstChild("Screen")
+
+                    if handle and screen then
+                        handle.Anchored = true
+                        local surfaceGui = screen:FindFirstChild("SurfaceGui")
+                        if surfaceGui and surfaceGui:FindFirstChild("Frame") then
+                            local frame = surfaceGui.Frame
+                            local label = frame:FindFirstChildWhichIsA("TextLabel")
+                            if label then
+                                temperature = label.ContentText
+                            end
+                        end
+
+                        local dropPos = hrp.Position + hrp.CFrame.LookVector * -3
+                        droppedItem:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
+                    end
+                end
+            end)
+        else
             if lop4 then
                 lop4:Disconnect()
                 lop4 = nil
-                itemsFolder:FindFirstChild("2").Handle.Anchored = false
             end
-    end
-   end,
+
+            local droppedItem = itemsFolder:FindFirstChild("1")
+            if droppedItem and droppedItem:FindFirstChild("Handle") then
+                droppedItem.Handle.Anchored = false
+            end
+        end
+    end,
 })
+
 
 
 

@@ -205,8 +205,8 @@ local function getAllItems(itemName)
 	return items
 end
 
--- drop item toggle that follows ghost and works for all players’ items
-local function dropItemToggle(tab, name, itemName, offset, showTemp)
+-- drop item toggle that makes items orbit ghost
+local function dropItemOrbit(tab, name, itemName, radius, height, showTemp)
 	tab:CreateToggle({
 		Name = name,
 		CurrentValue = false,
@@ -227,6 +227,7 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 			end
 
 			if enabled then
+				local angle = 0
 				toggles[itemName] = RS.RenderStepped:Connect(function(delta)
 					local ghostModel = workspace:FindFirstChild("Ghost")
 					if not ghostModel then return end
@@ -234,21 +235,30 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 					if not hrp then return end
 
 					local items = getAllItems(itemName)
-					for _, it in ipairs(items) do
+					local count = #items
+					if count == 0 then return end
+
+					for index, it in ipairs(items) do
 						if it and it.Parent then
 							local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
 							if pp then
 								it.PrimaryPart = pp
 
-								-- teleport and rotate to ghost
-								local targetPos = hrp.Position + offset
-								local lookCFrame = CFrame.new(pp.Position, hrp.Position)
-								local targetCFrame = CFrame.new(targetPos)
-								local newCFrame = it:GetPivot():Lerp(targetCFrame:Lerp(lookCFrame, 0.5), 1)
-								safePivot(it, newCFrame)
+								-- calculate orbit position
+								local orbitAngle = angle + (index / count) * math.pi * 2
+								local x = math.cos(orbitAngle) * radius
+								local z = math.sin(orbitAngle) * radius
+								local targetPos = hrp.Position + Vector3.new(x, height, z)
+
+								-- rotate to face ghost
+								local newCFrame = CFrame.lookAt(targetPos, hrp.Position)
+
+								-- smooth movement
+								local finalCFrame = it:GetPivot():Lerp(newCFrame, 0.5)
+								safePivot(it, finalCFrame)
 							end
 
-							-- update thermometer display
+							-- thermometer display
 							if showTemp and it:FindFirstChild("Screen") then
 								local screen = it.Screen
 								local surfaceGui = screen:FindFirstChild("SurfaceGui")
@@ -260,6 +270,9 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 							end
 						end
 					end
+
+					-- increment angle for rotation
+					angle = angle + delta -- speed of orbit
 				end)
 			else
 				local items = getAllItems(itemName)
@@ -267,9 +280,8 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 					if it and it.Parent then
 						local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
 						if pp then
-							-- leave physics normal
+							safePivot(it, char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
 						end
-						safePivot(it, char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
 					end
 				end
 
@@ -282,14 +294,13 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 	})
 end
 
--- create toggles for all items
-dropItemToggle(Tab1, "📟 Drop EMF Reader near ghost", "6", Vector3.new(0, 2, -3))
-dropItemToggle(Tab1, "👻 Drop Laser Projector near ghost", "8", Vector3.new(0, 2, 0))
-dropItemToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 2, 5))
-dropItemToggle(Tab1, "📖 Drop Spirit Book near ghost", "3", Vector3.new(0, 2, 0))
-dropItemToggle(Tab1, "🌹 Drop Flower Pot near ghost", "9", Vector3.new(0, 2, 0))
-dropItemToggle(Tab1, "🌡️ Drop Thermometer near ghost", "2", Vector3.new(0, 2, -3), true)
-
+-- create orbit toggles for all items
+dropItemOrbit(Tab1, "📟 EMF Reader Orbit", "6", 3, 2)
+dropItemOrbit(Tab1, "👻 Laser Projector Orbit", "8", 4, 2)
+dropItemOrbit(Tab1, "📷 Camera Orbit", "1", 5, 2)
+dropItemOrbit(Tab1, "📖 Spirit Book Orbit", "3", 3.5, 1.5)
+dropItemOrbit(Tab1, "🌹 Flower Pot Orbit", "9", 2.5, 1)
+dropItemOrbit(Tab1, "🌡️ Thermometer Orbit", "2", 3, 2, true)
 
 -- GUI: show ghost info + temperature
 local Section2 = Tab1:CreateSection("Ghost Status 👻")

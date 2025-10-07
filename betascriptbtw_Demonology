@@ -177,22 +177,24 @@ local Gl = Tab1:CreateToggle({
 
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 
-local function createDropToggle(tab, name, itemID, offset)
+-- Utility function to create client-side drop toggles
+local function createDropToggle(tab, name, itemName, offset, isThermometer)
     local connection
     return tab:CreateToggle({
         Name = name,
         CurrentValue = false,
         Flag = name,
         Callback = function(enabled)
-            local player = game.Players.LocalPlayer
             local char = player.Character or player.CharacterAdded:Wait()
             local hrp = ghost:WaitForChild("HumanoidRootPart")
             local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
             if not itemsFolder then warn("❌ Item folder missing") return end
 
             local event = ReplicatedStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
-            -- Drop item from all slots to make sure it exists
+            -- Drop all slots to make sure the item exists
             event:FireServer("InvSlot1")
             event:FireServer("InvSlot2")
             event:FireServer("InvSlot3")
@@ -202,11 +204,24 @@ local function createDropToggle(tab, name, itemID, offset)
                 connection = RunService.RenderStepped:Connect(function()
                     if not enabled or not char then return end
 
-                    -- Always get current instance of the item
-                    local item = itemsFolder:FindFirstChild(itemID)
+                    -- Always get the current instance of the item
+                    local item = itemsFolder:FindFirstChild(itemName)
                     if item and item:FindFirstChild("Handle") then
-                        -- Anchor and teleport it to ghost
-                        item.Handle.Anchored = true
+                        local handle = item.Handle
+                        handle.Anchored = true
+
+                        -- Thermometer special: update temperature
+                        if isThermometer and item:FindFirstChild("Screen") then
+                            local screen = item.Screen
+                            local surfaceGui = screen:FindFirstChild("SurfaceGui")
+                            local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
+                            local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
+                            if label then
+                                temperature = label.Text
+                            end
+                        end
+
+                        -- Teleport item to ghost position + offset
                         item:PivotTo(CFrame.lookAt(hrp.Position + offset, hrp.Position))
                     end
                 end)
@@ -216,7 +231,8 @@ local function createDropToggle(tab, name, itemID, offset)
                     connection:Disconnect()
                     connection = nil
                 end
-                local item = itemsFolder:FindFirstChild(itemID)
+
+                local item = itemsFolder:FindFirstChild(itemName)
                 if item and item:FindFirstChild("Handle") then
                     item.Handle.Anchored = false
                 end
@@ -229,75 +245,8 @@ end
 createDropToggle(Tab1, "📟 Drop EMF Reader near ghost", "6", Vector3.new(0, -2, -3))
 createDropToggle(Tab1, "📟 Drop Laser Projector near ghost", "8", Vector3.new(0, 0, 3))
 createDropToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 0, 4))
+createDropToggle(Tab1, "🌡️ Drop Thermometer near ghost", "2", Vector3.new(0, 0, -3), true)
 
-
-local lop4
-local temperature = "Waiting for thermometer to check"
-
-local dropther = Tab1:CreateToggle({
-    Name = "🌡️ Drop Thermometer near ghost",
-    CurrentValue = false,
-    Flag = "ToggleThermometer",
-    Callback = function(enabled)
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        local RunService = game:GetService("RunService")
-        local Players = game:GetService("Players")
-        local player = Players.LocalPlayer
-        local char = player.Character or player.CharacterAdded:Wait()
-        local hrp = ghost:WaitForChild("HumanoidRootPart")
-        local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
-
-        if not itemsFolder then
-            warn("❌ Item folder is missing")
-            return
-        end
-
-        local event = ReplicatedStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
-        -- Drop all slots to make sure thermometer exists
-        event:FireServer("InvSlot1")
-        event:FireServer("InvSlot2")
-        event:FireServer("InvSlot3")
-        task.wait(1)
-
-        if enabled then
-            lop4 = RunService.RenderStepped:Connect(function()
-                if not enabled or not char then return end
-
-                -- Always get the current thermometer instance
-                local droppedItem = itemsFolder:FindFirstChild("2") -- "2" is thermometer
-                if droppedItem and droppedItem:FindFirstChild("Handle") and droppedItem:FindFirstChild("Screen") then
-                    local handle = droppedItem.Handle
-                    local screen = droppedItem.Screen
-
-                    handle.Anchored = true
-
-                    -- Update temperature safely
-                    local surfaceGui = screen:FindFirstChild("SurfaceGui")
-                    local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
-                    local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
-                    if label then
-                        temperature = label.Text
-                    end
-
-                    -- Teleport thermometer in front of ghost
-                    local dropPos = hrp.Position + hrp.CFrame.LookVector * -3
-                    droppedItem:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
-                end
-            end)
-        else
-            if lop4 then
-                lop4:Disconnect()
-                lop4 = nil
-            end
-
-            -- Unanchor thermometer safely
-            local droppedItem = itemsFolder:FindFirstChild("2")
-            if droppedItem and droppedItem:FindFirstChild("Handle") then
-                droppedItem.Handle.Anchored = false
-            end
-        end
-    end,
-})
 
 
 

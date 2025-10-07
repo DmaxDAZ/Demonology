@@ -175,68 +175,20 @@ local Gl = Tab1:CreateToggle({
    end,
 })
 
-local dropemf = Tab1:CreateButton({
-    Name = "📟 Drop EMF Reader near ghost",
-    Callback = function()
-        local hrp = ghost:WaitForChild("HumanoidRootPart")
+local lop1
 
-        local rs = game:GetService("ReplicatedStorage")
-        local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
-        event:FireServer("InvSlot1")
-        event:FireServer("InvSlot2")
-        event:FireServer("InvSlot3")
-
-        task.wait(1)
-        if not itemsFolder then
-            warn("❌ ไม่พบโฟลเดอร์ items ใน workspace")
-            return
-        end
-
-        local droppedItem = itemsFolder:FindFirstChild("6")
-        if droppedItem then
-            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 2, -3))
-        else
-            warn("❌ ไม่พบ EMF Reader ที่ drop แล้ว")
-        end
-    end,
-})
-
-local droplaser = Tab1:CreateButton({
-    Name = "📟 Drop Laser Projector near ghost",
-    Callback = function()
-        local hrp = ghost:WaitForChild("HumanoidRootPart")
-
-        local rs = game:GetService("ReplicatedStorage")
-        local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
-        event:FireServer("InvSlot1")
-        event:FireServer("InvSlot2")
-        event:FireServer("InvSlot3")
-
-        task.wait(1)
-        if not itemsFolder then
-            warn("❌ ไม่พบโฟลเดอร์ items ใน workspace")
-            return
-        end
-
-        local droppedItem = itemsFolder:FindFirstChild("8")
-        if droppedItem then
-            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 2.5, 0))
-        else
-            warn("❌ ไม่พบ EMF Reader ที่ drop แล้ว")
-        end
-    end,
-})
-
-local dropcamera = Tab1:CreateButton({
-    Name = "📷 Drop Camera near ghost",
-    Callback = function()
-        local rs = game:GetService("ReplicatedStorage")
+local droplaser = Tab1:CreateToggle({
+   Name = "📟 Drop EMF Reader near ghost",
+   CurrentValue = false,
+   Flag = "Toggle1", 
+   Callback = function(bool)
+           local rs = game:GetService("ReplicatedStorage")
         local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
 
         local hrp = ghost:WaitForChild("HumanoidRootPart")
         local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
         if not itemsFolder then
-            warn("❌ ไม่พบโฟลเดอร์ items ใน workspace")
+            warn("❌ item folder is missing")
             return
         end
 
@@ -245,16 +197,116 @@ local dropcamera = Tab1:CreateButton({
         event:FireServer("InvSlot3")
 
         task.wait(1)
+        if bool then
+        lop1 = RunService.RenderStepped:Connect(function()
+        if not bool or not char then return end
+               local droppedItem = itemsFolder:FindFirstChild("6")
+        if droppedItem then
+            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, -2, -3))
+        else
+            warn("❌ Not found EMF Reader dropped")
+        end
+        end)
+           else
 
-        local droppedItem = itemsFolder:FindFirstChild("1")
+            if lop1 then
+                lop1:Disconnect()
+                lop1 = nil
+            end
+    end
+   end,
+})
+
+
+
+
+local lop2
+
+local droplaser = Tab1:CreateToggle({
+   Name = "📟 Drop Laser Projector near ghost",
+   CurrentValue = false,
+   Flag = "Toggle1", 
+   Callback = function(bool)
+           local rs = game:GetService("ReplicatedStorage")
+        local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
+
+        local hrp = ghost:WaitForChild("HumanoidRootPart")
+        local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
+        if not itemsFolder then
+            warn("❌ item folder is missing")
+            return
+        end
+
+        event:FireServer("InvSlot1")
+        event:FireServer("InvSlot2")
+        event:FireServer("InvSlot3")
+
+        task.wait(1)
+        if bool then
+        lop2 = RunService.RenderStepped:Connect(function()
+        if not bool or not char then return end
+               local droppedItem = itemsFolder:FindFirstChild("8")
+        if droppedItem then
+            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 0, 3))
+        else
+            warn("❌ Not found Laser Projector dropped")
+        end
+        end)
+           else
+
+            if lop2 then
+                lop2:Disconnect()
+                lop2 = nil
+            end
+    end
+   end,
+})
+
+
+
+
+local lop3
+
+local dropcamera = Tab1:CreateToggle({
+   Name = "📷 Drop Camera near ghost",
+   CurrentValue = false,
+   Flag = "Toggle1", 
+   Callback = function(bool)
+           local rs = game:GetService("ReplicatedStorage")
+        local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
+
+        local hrp = ghost:WaitForChild("HumanoidRootPart")
+        local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
+        if not itemsFolder then
+            warn("❌ item folder is missing")
+            return
+        end
+
+        event:FireServer("InvSlot1")
+        event:FireServer("InvSlot2")
+        event:FireServer("InvSlot3")
+
+        task.wait(1)
+        if bool then
+        lop3 = RunService.RenderStepped:Connect(function()
+        if not bool or not char then return end
+               local droppedItem = itemsFolder:FindFirstChild("1")
         if droppedItem then
             local dropPos = hrp.Position + hrp.CFrame.LookVector * 4 + Vector3.new(0, 0, 0)
             
             droppedItem:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
         else
-            warn("❌ ไม่พบ Camera ที่ drop แล้ว")
+            warn("❌ not found Camera dropped")
         end
-    end,
+        end)
+           else
+
+            if lop3 then
+                lop3:Disconnect()
+                lop3 = nil
+            end
+    end
+   end,
 })
 
 

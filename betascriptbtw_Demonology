@@ -639,7 +639,7 @@ local ligon = Tab5:CreateButton({
 		local roomsFolder = workspace:WaitForChild("Map"):WaitForChild("Rooms")
 
 		for _, room in pairs(roomsFolder:GetChildren()) do
-			if room:IsA("Model") or room:IsA("Folder") then
+			if room:IsA("Folder") then
 				local isOn = room:GetAttribute("LightsOn")
 				if isOn == false or isOn == nil then
 					event:FireServer(room)

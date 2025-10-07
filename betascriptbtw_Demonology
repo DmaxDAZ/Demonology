@@ -428,6 +428,18 @@ local NOC = Tab4:CreateToggle({
    Flag = "Toggle1",
    Callback = function(bool)
    noclip = bool
+   		Stepped = RunService.Stepped:Connect(function()
+			if not noclip == false then
+				for a, b in pairs(game.Workspace:GetChildren()) do
+                if b.Name == player.Name then
+                for i, v in pairs(Workspace[player.Name]:GetChildren()) do
+                if v:IsA("BasePart") then
+                v.CanCollide = false
+             end end end end
+			else
+				Stepped:Disconnect()
+			end
+		end)
    end,
 })
 
@@ -484,17 +496,3 @@ Image = "map-pin-pen",
 })
    end,
 })
-spawn(function()
-		Stepped = game:GetService("RunService").Stepped:Connect(function()
-			if not noclip == false then
-				for a, b in pairs(Workspace:GetChildren()) do
-                if b.Name == Plr.Name then
-                for i, v in pairs(Workspace[Plr.Name]:GetChildren()) do
-                if v:IsA("BasePart") then
-                v.CanCollide = false
-             end end end end
-			else
-				Stepped:Disconnect()
-			end
-		end)
-    end)

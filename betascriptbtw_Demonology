@@ -8,6 +8,8 @@ local itemsFolder = workspace:FindFirstChild("Items")
 local lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 
+local temperature = "Unknown"
+
 local skinwalker = 0
 local itemss_s = 0
 
@@ -175,134 +177,161 @@ local Gl = Tab1:CreateToggle({
    end,
 })
 
-local function dropItemNoclip(tab, name, itemName, offset, showTemp)
-    tab:CreateToggle({
-        Name = name,
-        CurrentValue = false,
-        Flag = name,
-        Callback = function(enabled)
-            local char = PL.Character or PL.CharacterAdded:Wait()
-            local rootPart = char:FindFirstChild("HumanoidRootPart")
-            if not rootPart then return end
-            local dropEvent = RSStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
+--! โค้ด Lua Script: Smooth Follow, Noclip, Anti-Jitter (LocalScript)
 
-            -- Drop items to sync inventory
-            for i = 1, 3 do
-                dropEvent:FireServer("InvSlot"..i)
-            end
-            task.wait(0.3)
+local RS = game:GetService("RunService")
+local RSStorage = game:GetService("ReplicatedStorage")
+local PL = game.Players.LocalPlayer
+local toggles = {}
+local temperature = "Waiting for thermometer to check"
 
-            if toggles[itemName] then
-                toggles[itemName]:Disconnect()
-                toggles[itemName] = nil
-            end
+-- ปรับค่านี้เพื่อควบคุมความสมูท: 0.2 คือค่าที่สมดุลระหว่างความสมูทกับความตอบสนอง
+local SMOOTHNESS_FACTOR = 0.2 
+-- ระยะทางที่จะ 'ล็อค' เข้าที่เพื่อหยุดอาการสั่น (Anti-Jitter)
+local SNAP_DISTANCE = 0.3 
 
-            if enabled then
-                toggles[itemName] = RS.RenderStepped:Connect(function(delta)
-                    local ghostModel = workspace:FindFirstChild("Ghost")
-                    if not ghostModel then return end
-                    local hrp = ghostModel:FindFirstChild("HumanoidRootPart")
-                    if not hrp then return end
+--------------------------------------------------------------------------------
+-- [ 🛠️ Utility Functions ]
+--------------------------------------------------------------------------------
 
-                    local items = getAllItems(itemName)
-                    if not items then return end
-
-                    for _, it in ipairs(items) do
-                        if it and it.Parent then
-                            local success, pp = pcall(function()
-                                return it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
-                            end)
-                            if success and pp and pp:IsA("BasePart") then
-                                setNetworkOwner(pp)
-                                pp.CanCollide = false
-
-                                -- BodyPosition
-                                local bp = pp:FindFirstChild("FollowBP") or Instance.new("BodyPosition")
-                                bp.Name = "FollowBP"
-                                bp.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-                                bp.D = 20
-                                bp.P = 2000
-                                if not bp.Parent then bp.Parent = pp end
-                                bp.Position = hrp.Position + offset
-
-                                -- BodyGyro
-                                local bg = pp:FindFirstChild("FollowBG") or Instance.new("BodyGyro")
-                                bg.Name = "FollowBG"
-                                bg.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-                                bg.D = 20
-                                bg.P = 2000
-                                if not bg.Parent then bg.Parent = pp end
-                                bg.CFrame = CFrame.new(pp.Position, hrp.Position)
-
-                                -- Thermometer update
-                                if showTemp and it:FindFirstChild("Screen") then
-                                    local screen = it.Screen
-                                    local surfaceGui = screen:FindFirstChild("SurfaceGui")
-                                    local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
-                                    local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
-                                    if label then
-                                        temperature = label.Text
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end)
-            else
-                -- ปิด toggle: วาปกลับไปตัวเรา
-                local items = getAllItems(itemName)
-                for _, it in ipairs(items) do
-                    if it and it.Parent then
-                        local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
-                        if pp and pp:IsA("BasePart") then
-                            pp.CanCollide = true
-                            pp:SetNetworkOwner(nil)
-
-                            local bp = pp:FindFirstChild("FollowBP")
-                            if bp then bp:Destroy() end
-                            local bg = pp:FindFirstChild("FollowBG")
-                            if bg then bg:Destroy() end
-
-                            if rootPart then
-                                pp.CFrame = rootPart.CFrame + Vector3.new(0,3,0)
-                            end
-                        end
-                    end
-                end
-
-                if toggles[itemName] then
-                    toggles[itemName]:Disconnect()
-                    toggles[itemName] = nil
-                end
-            end
-        end
-    })
+local function getAllItems(itemName)
+local folder = workspace:FindFirstChild("Items")
+if not folder then return {} end
+local items = {}
+for _, v in ipairs(folder:GetChildren()) do
+if v.Name == itemName then
+table.insert(items, v)
+end
+end
+return items
 end
 
+local function setNetworkOwner(part)
+if part:CanSetNetworkOwnership() then
+part:SetNetworkOwner(PL)
+end
+end
 
+-- ฟังก์ชันทำความสะอาด BodyMovers (ตามชื่อที่คุณเคยใช้)
+local function cleanupBodyMovers(part)
+    local bp = part:FindFirstChild("FollowBP")
+if bp then bp:Destroy() end
+local bg = part:FindFirstChild("FollowBG")
+if bg then bg:Destroy() end
+end
 
 --------------------------------------------------------------------------------
--- Create Toggles
+-- [ 👻 Core Logic: Smooth Follow with Anti-Jitter (CFrame Control) ]
 --------------------------------------------------------------------------------
 
-dropItemNoclip(Tab1, "📟 EMF Reader", "6", Vector3.new(0, 2, -3))
+local function dropItemNoclip(tab, name, itemName, offset, showTemp)
+ tab:CreateToggle({
+Name = name,
+urrentValue = false,
+Flag = name,
+Callback = function(enabled)
+local char = PL.Character or PL.CharacterAdded:Wait()
+local rootPart = char:FindFirstChild("HumanoidRootPart")
+if not rootPart then return end
+local dropEvent = RSStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
+
+-- Drop items to sync inventory
+for i = 1, 3 do
+dropEvent:FireServer("InvSlot"..i)
+end
+ task.wait(0.3)
+
+if toggles[itemName] then
+toggles[itemName]:Disconnect()
+toggles[itemName] = nil
+end
+
+if enabled then
+toggles[itemName] = RS.RenderStepped:Connect(function(delta)
+local ghostModel = workspace:FindFirstChild("Ghost")
+ if not ghostModel then return end
+local hrp = ghostModel:FindFirstChild("HumanoidRootPart")
+if not hrp then return end
+
+local targetCFrame = hrp.CFrame * CFrame.new(offset) 
+
+local items = getAllItems(itemName)
+
+for _, it in ipairs(items) do
+if it and it.Parent then
+local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
+if pp and pp:IsA("BasePart") then
+
+                                -- 1. ป้องกัน Physics Conflict และ Noclip 100%
+setNetworkOwner(pp)
+ pp.CanCollide = false
+                             
+                                -- 2. ล้าง BodyMovers เก่า (สำคัญมาก)
+                                cleanupBodyMovers(pp)
+
+-- 3. Anti-Jitter / Smooth Follow Logic (ใช้ CFrame)
+local distance = (pp.Position - targetCFrame.Position).Magnitude
+if distance > SNAP_DISTANCE then
+pp.CFrame = pp.CFrame:Lerp(targetCFrame, SMOOTHNESS_FACTOR)
+else
+pp.CFrame = targetCFrame
+end
+
+if showTemp and it:FindFirstChild("Screen") then
+local screen = it.Screen
+local surfaceGui = screen:FindFirstChild("SurfaceGui")
+local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
+local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
+if label then
+temperature = label.Text
+end
+end
+end
+end
+end
+end)
+else
+local items = getAllItems(itemName)
+for _, it in ipairs(items) do
+if it and it.Parent then
+local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
+if pp and pp:IsA("BasePart") then
+pp.CanCollide = true
+pp:SetNetworkOwner(nil) -- คืน Network Ownership ให้ Server
+cleanupBodyMovers(pp)
+
+ if rootPart then
+ pp.CFrame = rootPart.CFrame + Vector3.new(0,3,0)
+end
+end
+ end
+end
+
+if toggles[itemName] then
+toggles[itemName]:Disconnect()
+toggles[itemName] = nil
+end
+end
+end
+ })
+end
+
+--------------------------------------------------------------------------------
+-- [ ⚙️ Create Toggles ]
+--------------------------------------------------------------------------------
+
+dropItemNoclip(Tab1, "📟 EMF Reader", "6", Vector3.new(0, 2, -3)) 
 dropItemNoclip(Tab1, "👻 Laser Projector", "8", Vector3.new(0, 2, 0))
 dropItemNoclip(Tab1, "📷 Camera", "1", Vector3.new(0, 2, 5))
 dropItemNoclip(Tab1, "📖 Spirit Book", "3", Vector3.new(0, 2, 0))
 dropItemNoclip(Tab1, "🌹 Flower Pot", "9", Vector3.new(0, 2, 0))
 dropItemNoclip(Tab1, "🌡️ Thermometer", "2", Vector3.new(0, 2, -3), true)
 
---------------------------------------------------------------------------------
--- Ghost Status GUI
---------------------------------------------------------------------------------
+---
 
-local ghost = game.Workspace:FindFirstChild("Ghost")
-game.Workspace.ChildAdded:Connect(function(child)
-    if child.Name == "Ghost" then
-        ghost = child
-    end
-end)
+-- ส่วนนี้จะใช้เพื่อแสดงข้อมูลสถานะ Ghost และอุณหภูมิ
 
+-- ประกาศตัวแปร local สำหรับส่วน GUI
 local Section2 = Tab1:CreateSection("Ghost Status 👻")
 local stat1 = Tab1:CreateSection("Current room: | Unknown")
 local stat2 = Tab1:CreateSection("Age: | Unknown")
@@ -312,15 +341,19 @@ local stat5 = Tab1:CreateSection("Visual model: | Unknown")
 local stat6 = Tab1:CreateSection("Ghost Orb: | Not have")
 local stat7 = Tab1:CreateSection("Temperature | waiting thermometer to check")
 
-RunService.Stepped:Connect(function()
+RS.RenderStepped:Connect(function()
+    -- ค้นหา Ghost Model ในทุกเฟรม
     local currentGhost = workspace:FindFirstChild("Ghost")
+    
     if currentGhost then
+        -- ใช้ GetAttribute เพื่อดึงข้อมูลอย่างปลอดภัย
         stat1:Set("Current room | "..(currentGhost:GetAttribute("CurrentRoom") or "Unknown"))
         stat2:Set("Age | "..(currentGhost:GetAttribute("Age") or "Unknown"))
         stat3:Set("Gender | "..(currentGhost:GetAttribute("Gender") or "Unknown"))
         stat4:Set("Favorite room | "..(currentGhost:GetAttribute("FavoriteRoom") or "Unknown"))
         stat5:Set("Visual model | "..(currentGhost:GetAttribute("VisualModel") or "Unknown"))
     else
+        -- ถ้า Ghost หายไป ให้เซ็ตค่ากลับเป็น Unknown
         stat1:Set("Current room | Unknown")
         stat2:Set("Age | Unknown")
         stat3:Set("Gender | Unknown")
@@ -328,15 +361,16 @@ RunService.Stepped:Connect(function()
         stat5:Set("Visual model | Unknown")
     end
 
+    -- ตรวจสอบ Ghost Orb
     if workspace:FindFirstChild("GhostOrb") then
         stat6:Set("Ghost Orb | Have")
     else
         stat6:Set("Ghost Orb | Not have")
     end
 
+    -- อัปเดตอุณหภูมิจากตัวแปร global
     stat7:Set("Temperature | "..temperature)
 end)
-
 
 local Tab2 = Window:CreateTab("Items", "hammer")
 local Section3 = Tab2:CreateSection("Items")

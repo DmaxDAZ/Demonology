@@ -215,35 +215,34 @@ local function dropItemToggle(tab, name, itemName, offset, isThermo)
                 toggles[itemName] = nil
             end
 
-            if enabled then
-                toggles[itemName] = RS.RenderStepped:Connect(function()
-                    if not enabled or not char then return end
-                    local it = findItem()
-                    if it and it:FindFirstChild("Handle") then
-                        local h = it.Handle
-                        h.Anchored = true
+-- Inside dropItemToggle function, replace RenderStepped with this logic
 
-                        -- Thermometer updates
-                        if isThermo and it:FindFirstChild("Screen") then
-                            local screen = it.Screen
-                            local sg = screen:FindFirstChild("SurfaceGui")
-                            local frame = sg and sg:FindFirstChild("Frame")
-                            local lbl = frame and frame:FindFirstChildWhichIsA("TextLabel")
-                            if lbl then temp = lbl.Text end
-                        end
+if enabled then
+    toggles[itemName] = RS.RenderStepped:Connect(function()
+        if not enabled or not char then return end
+        local it = findItem()
+        if it and it:FindFirstChild("Handle") then
+            local h = it.Handle
 
-                        -- Always teleport in front of ghost
-                        local dropPos = hrp.Position + offset
-                        it:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
-                    end
-                end)
-            else
-                -- Disconnect and unanchor
-                local it = findItem()
-                if it and it:FindFirstChild("Handle") then
-                    it.Handle.Anchored = false
-                end
-            end
+            -- Anchor only while moving
+            it:PivotTo(CFrame.lookAt(hrp.Position + offset, hrp.Position))
+            h.Anchored = true
+        end
+    end)
+else
+    -- Move item back to your character before unanchoring
+    local it = findItem()
+    if it and it:FindFirstChild("Handle") then
+        it:PivotTo(char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)) -- above your head
+        it.Handle.Anchored = false
+    end
+
+    if toggles[itemName] then
+        toggles[itemName]:Disconnect()
+        toggles[itemName] = nil
+    end
+end
+
         end
     })
 end

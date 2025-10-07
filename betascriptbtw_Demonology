@@ -525,3 +525,21 @@ Image = "map-pin-pen",
 })
    end,
 })
+
+local Tab5 = Window:CreateTab("Game", "server")
+local Section10 = Tab4:CreateSection("In Game")
+
+local ligon = Tab5:CreateButton({
+    Name = "💡 Turn all lights",
+    Callback = function()
+        local rs = game:GetService("ReplicatedStorage")
+        local event = rs:WaitForChild("Events"):WaitForChild("UseLightSwitch")
+        local roomsFolder = workspace:WaitForChild("Map"):WaitForChild("Rooms")
+
+        for _, room in pairs(roomsFolder:GetChildren()) do
+            if room:IsA("Model") or room:IsA("Folder") then
+                event:FireServer(room)
+            end
+        end
+    end,
+})

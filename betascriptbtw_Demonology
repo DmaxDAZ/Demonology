@@ -207,7 +207,7 @@ local function getLatestItem(itemName)
 	return newest
 end
 
--- drop item toggle without anchoring, faster Lerp
+-- drop item toggle without collision changes
 local function dropItemToggle(tab, name, itemName, offset, showTemp)
 	tab:CreateToggle({
 		Name = name,
@@ -239,14 +239,10 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 					if it and it.Parent then
 						local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
 						if pp then
-							-- ensure PrimaryPart is set
 							it.PrimaryPart = pp
-							-- disable collisions
-							pp.CanCollide = false
-
-							-- smoother but faster follow
+							-- teleport to ghost (fast Lerp for smooth but stable follow)
 							local targetCFrame = hrp.CFrame:ToWorldSpace(CFrame.new(offset))
-							local newCFrame = it:GetPivot():Lerp(targetCFrame, 0.4) -- faster
+							local newCFrame = it:GetPivot():Lerp(targetCFrame, 1) -- full catch-up
 							safePivot(it, newCFrame)
 						end
 
@@ -267,8 +263,9 @@ local function dropItemToggle(tab, name, itemName, offset, showTemp)
 				if it then
 					local pp = it.PrimaryPart or it:FindFirstChildWhichIsA("BasePart", true)
 					if pp then
-						pp.CanCollide = true -- re-enable collisions
+						-- leave physics normal
 					end
+					-- drop item slightly above player
 					safePivot(it, char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
 				end
 				if toggles[itemName] then
@@ -287,11 +284,6 @@ dropItemToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 2, 5))
 dropItemToggle(Tab1, "📖 Drop Spirit Book near ghost", "3", Vector3.new(0, 2, 0))
 dropItemToggle(Tab1, "🌹 Drop Flower Pot near ghost", "9", Vector3.new(0, 2, 0))
 dropItemToggle(Tab1, "🌡️ Drop Thermometer near ghost", "2", Vector3.new(0, 2, -3), true)
-
-
-
-
-
 
 
 -- GUI: show ghost info + temperature

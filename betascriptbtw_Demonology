@@ -175,7 +175,7 @@ local Gl = Tab1:CreateToggle({
    end,
 })
 
-local drop = Tab1:CreateButton({
+local dropemf = Tab1:CreateButton({
     Name = "📟 Drop EMF Reader near ghost",
     Callback = function()
         local hrp = ghost:WaitForChild("HumanoidRootPart")
@@ -195,6 +195,58 @@ local drop = Tab1:CreateButton({
         local droppedItem = itemsFolder:FindFirstChild("6")
         if droppedItem then
             droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 2, -3))
+        else
+            warn("❌ ไม่พบ EMF Reader ที่ drop แล้ว")
+        end
+    end,
+})
+
+local droplaser = Tab1:CreateButton({
+    Name = "📟 Drop Laser Projector near ghost",
+    Callback = function()
+        local hrp = ghost:WaitForChild("HumanoidRootPart")
+
+        local rs = game:GetService("ReplicatedStorage")
+        local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
+        event:FireServer("InvSlot1")
+        event:FireServer("InvSlot2")
+        event:FireServer("InvSlot3")
+
+        task.wait(1)
+        if not itemsFolder then
+            warn("❌ ไม่พบโฟลเดอร์ items ใน workspace")
+            return
+        end
+
+        local droppedItem = itemsFolder:FindFirstChild("8")
+        if droppedItem then
+            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 2.5, 0))
+        else
+            warn("❌ ไม่พบ EMF Reader ที่ drop แล้ว")
+        end
+    end,
+})
+
+local dropcamera = Tab1:CreateButton({
+    Name = "📟 Drop Camera near ghost",
+    Callback = function()
+        local hrp = ghost:WaitForChild("HumanoidRootPart")
+
+        local rs = game:GetService("ReplicatedStorage")
+        local event = rs:WaitForChild("Events"):WaitForChild("RequestItemDrop")
+        event:FireServer("InvSlot1")
+        event:FireServer("InvSlot2")
+        event:FireServer("InvSlot3")
+
+        task.wait(1)
+        if not itemsFolder then
+            warn("❌ ไม่พบโฟลเดอร์ items ใน workspace")
+            return
+        end
+
+        local droppedItem = itemsFolder:FindFirstChild("1")
+        if droppedItem then
+            droppedItem:PivotTo(hrp.CFrame * CFrame.new(0, 2.5, 4) * CFrame.Angles(0,math.rad(180),0))
         else
             warn("❌ ไม่พบ EMF Reader ที่ drop แล้ว")
         end

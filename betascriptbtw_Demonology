@@ -181,89 +181,96 @@ local PL = game.Players.LocalPlayer
 local toggles = {}
 local temperature = "Waiting for thermometer to check"
 
--- function to find latest dropped item of that type
+-- safely move any model even if it doesn't have PrimaryPart set
+local function safePivot(model, cframe)
+	if not model or not cframe then return end
+	local pp = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
+	if pp then
+		model.PrimaryPart = pp
+		model:PivotTo(cframe)
+	end
+end
+
+-- get newest dropped instance by name
 local function getLatestItem(itemName)
-    local folders = {workspace:FindFirstChild("Items"), workspace:FindFirstChild("DroppedItems")}
-    for _, folder in ipairs(folders) do
-        if folder then
-            local foundItems = {}
-            for _, v in ipairs(folder:GetChildren()) do
-                if v.Name == itemName then
-                    table.insert(foundItems, v)
-                end
-            end
-            if #foundItems > 0 then
-                table.sort(foundItems, function(a, b)
-                    return a:GetDebugId() > b:GetDebugId() -- newest instance
-                end)
-                return foundItems[1]
-            end
-        end
-    end
-    return nil
+	local folders = {workspace:FindFirstChild("Items"), workspace:FindFirstChild("DroppedItems")}
+	local newest
+	for _, folder in ipairs(folders) do
+		if folder then
+			for _, v in ipairs(folder:GetChildren()) do
+				if v.Name == itemName then
+					if not newest or v:GetDebugId() > newest:GetDebugId() then
+						newest = v
+					end
+				end
+			end
+		end
+	end
+	return newest
 end
 
 local function dropItemToggle(tab, name, itemName, offset, showTemp)
-    tab:CreateToggle({
-        Name = name,
-        CurrentValue = false,
-        Flag = name,
-        Callback = function(enabled)
-            local char = PL.Character or PL.CharacterAdded:Wait()
-            local hrp = ghost:WaitForChild("HumanoidRootPart")
-            local dropEvent = RSStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
+	tab:CreateToggle({
+		Name = name,
+		CurrentValue = false,
+		Flag = name,
+		Callback = function(enabled)
+			local char = PL.Character or PL.CharacterAdded:Wait()
+			local hrp = ghost:WaitForChild("HumanoidRootPart")
+			local dropEvent = RSStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
 
-            -- Drop all slots
-            dropEvent:FireServer("InvSlot1")
-            dropEvent:FireServer("InvSlot2")
-            dropEvent:FireServer("InvSlot3")
-            task.wait(1)
+			-- Drop all items to refresh inventory sync
+			dropEvent:FireServer("InvSlot1")
+			dropEvent:FireServer("InvSlot2")
+			dropEvent:FireServer("InvSlot3")
+			task.wait(1)
 
-            if toggles[itemName] then
-                toggles[itemName]:Disconnect()
-                toggles[itemName] = nil
-            end
+			if toggles[itemName] then
+				toggles[itemName]:Disconnect()
+				toggles[itemName] = nil
+			end
 
-            if enabled then
-                toggles[itemName] = RS.RenderStepped:Connect(function()
-                    if not enabled or not char then return end
-                    local it = getLatestItem(itemName)
-                    if it then
-                        it:PivotTo(CFrame.new(hrp.Position + offset, hrp.Position))
+			if enabled then
+				toggles[itemName] = RS.RenderStepped:Connect(function()
+					if not enabled or not char or not hrp then return end
+					local it = getLatestItem(itemName)
+					if it and it.Parent then
+						safePivot(it, CFrame.new(hrp.Position + offset, hrp.Position))
 
-                        -- Thermometer GUI read
-                        if showTemp and it:FindFirstChild("Screen") then
-                            local screen = it.Screen
-                            local surfaceGui = screen:FindFirstChild("SurfaceGui")
-                            local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
-                            local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
-                            if label then
-                                temperature = label.Text
-                            end
-                        end
-                    end
-                end)
-            else
-                local it = getLatestItem(itemName)
-                if it then
-                    it:PivotTo(char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
-                end
-                if toggles[itemName] then
-                    toggles[itemName]:Disconnect()
-                    toggles[itemName] = nil
-                end
-            end
-        end,
-    })
+						-- Update thermometer screen reading
+						if showTemp and it:FindFirstChild("Screen") then
+							local screen = it.Screen
+							local surfaceGui = screen:FindFirstChild("SurfaceGui")
+							local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
+							local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
+							if label then
+								temperature = label.Text
+							end
+						end
+					end
+				end)
+			else
+				local it = getLatestItem(itemName)
+				if it then
+					safePivot(it, char.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
+				end
+				if toggles[itemName] then
+					toggles[itemName]:Disconnect()
+					toggles[itemName] = nil
+				end
+			end
+		end,
+	})
 end
 
--- Create toggles
+-- create toggles
 dropItemToggle(Tab1, "📟 Drop EMF Reader near ghost", "6", Vector3.new(0, -2, -3))
 dropItemToggle(Tab1, "👻 Drop Laser Projector near ghost", "8", Vector3.new(0, 0, 0))
 dropItemToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 0, 5))
-dropItemToggle(Tab1, "📖 Drop Spirit Book near ghost", "3", Vector3.new(0, -3.5, 0))
-dropItemToggle(Tab1, "🌹 Drop Flower Pot near ghost", "9", Vector3.new(0, -3.5, -2))
+dropItemToggle(Tab1, "📖 Drop Spirit Book near ghost", "3", Vector3.new(0, -4, 0))
+dropItemToggle(Tab1, "🌹 Drop Flower Pot near ghost", "9", Vector3.new(0, -4, 0))
 dropItemToggle(Tab1, "🌡️ Drop Thermometer near ghost", "2", Vector3.new(0, 0, -3), true)
+
 
 
 
@@ -625,19 +632,23 @@ local Tab5 = Window:CreateTab("Troll", "server")
 local Section10 = Tab5:CreateSection("Troll")
 
 local ligon = Tab5:CreateButton({
-    Name = "💡 Power off",
-    Callback = function()
-        local rs = game:GetService("ReplicatedStorage")
-        local event = rs:WaitForChild("Events"):WaitForChild("UseLightSwitch")
-        local roomsFolder = workspace:WaitForChild("Map"):WaitForChild("Rooms")
+	Name = "💡 Power Overload (Troll)",
+	Callback = function()
+		local rs = game:GetService("ReplicatedStorage")
+		local event = rs:WaitForChild("Events"):WaitForChild("UseLightSwitch")
+		local roomsFolder = workspace:WaitForChild("Map"):WaitForChild("Rooms")
 
-        for _, room in pairs(roomsFolder:GetChildren()) do
-            if room:IsA("Model") or room:IsA("Folder") then
-                event:FireServer(room)
-            end
-        end
-    end,
+		for _, room in pairs(roomsFolder:GetChildren()) do
+			if room:IsA("Model") or room:IsA("Folder") then
+				local isOn = room:GetAttribute("LightsOn")
+				if isOn == false or isOn == nil then
+					event:FireServer(room)
+				end
+			end
+		end
+	end,
 })
+
 
 local fixfuse = Tab5:CreateButton({
     Name = "💡 Fix Fusebox",

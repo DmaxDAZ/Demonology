@@ -175,77 +175,85 @@ local Gl = Tab1:CreateToggle({
    end,
 })
 
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local RS = game:GetService("RunService")
+local RSStorage = game:GetService("ReplicatedStorage")
+local PL = game.Players.LocalPlayer
 
--- Utility function to create client-side drop toggles
-local function createDropToggle(tab, name, itemName, offset, isThermometer)
-    local connection
-    return tab:CreateToggle({
+-- Table to store each item toggle connection
+local toggles = {}
+
+-- Generic function for any item
+local function dropItemToggle(tab, name, itemName, offset, isThermo)
+    tab:CreateToggle({
         Name = name,
         CurrentValue = false,
         Flag = name,
         Callback = function(enabled)
-            local char = player.Character or player.CharacterAdded:Wait()
+            local char = PL.Character or PL.CharacterAdded:Wait()
             local hrp = ghost:WaitForChild("HumanoidRootPart")
-            local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems")
-            if not itemsFolder then warn("❌ Item folder missing") return end
+            local dropEvent = RSStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
+            local temp = "Waiting for thermometer to check"
 
-            local event = ReplicatedStorage:WaitForChild("Events"):WaitForChild("RequestItemDrop")
-            -- Drop all slots to make sure the item exists
-            event:FireServer("InvSlot1")
-            event:FireServer("InvSlot2")
-            event:FireServer("InvSlot3")
-            task.wait(1)
+            local function getFolder() 
+                return workspace:FindFirstChild("Items") or workspace:FindFirstChild("DroppedItems") 
+            end
+            local function findItem() 
+                local f = getFolder() 
+                return f and f:FindFirstChild(itemName) 
+            end
+
+            -- Drop all slots to make sure item exists
+            dropEvent:FireServer("InvSlot1")
+            dropEvent:FireServer("InvSlot2")
+            dropEvent:FireServer("InvSlot3")
+            
+            task.wait(1) -- allow item to spawn
+
+            -- Disconnect previous connection if any
+            if toggles[itemName] then
+                toggles[itemName]:Disconnect()
+                toggles[itemName] = nil
+            end
 
             if enabled then
-                connection = RunService.RenderStepped:Connect(function()
+                toggles[itemName] = RS.RenderStepped:Connect(function()
                     if not enabled or not char then return end
+                    local it = findItem()
+                    if it and it:FindFirstChild("Handle") then
+                        local h = it.Handle
+                        h.Anchored = true
 
-                    -- Always get the current instance of the item
-                    local item = itemsFolder:FindFirstChild(itemName)
-                    if item and item:FindFirstChild("Handle") then
-                        local handle = item.Handle
-                        handle.Anchored = true
-
-                        -- Thermometer special: update temperature
-                        if isThermometer and item:FindFirstChild("Screen") then
-                            local screen = item.Screen
-                            local surfaceGui = screen:FindFirstChild("SurfaceGui")
-                            local frame = surfaceGui and surfaceGui:FindFirstChild("Frame")
-                            local label = frame and frame:FindFirstChildWhichIsA("TextLabel")
-                            if label then
-                                temperature = label.Text
-                            end
+                        -- Thermometer updates
+                        if isThermo and it:FindFirstChild("Screen") then
+                            local screen = it.Screen
+                            local sg = screen:FindFirstChild("SurfaceGui")
+                            local frame = sg and sg:FindFirstChild("Frame")
+                            local lbl = frame and frame:FindFirstChildWhichIsA("TextLabel")
+                            if lbl then temp = lbl.Text end
                         end
 
-                        -- Teleport item to ghost position + offset
-                        item:PivotTo(CFrame.lookAt(hrp.Position + offset, hrp.Position))
+                        -- Always teleport in front of ghost
+                        local dropPos = hrp.Position + offset
+                        it:PivotTo(CFrame.lookAt(dropPos, hrp.Position))
                     end
                 end)
             else
-                -- Disconnect RenderStepped and unanchor
-                if connection then
-                    connection:Disconnect()
-                    connection = nil
-                end
-
-                local item = itemsFolder:FindFirstChild(itemName)
-                if item and item:FindFirstChild("Handle") then
-                    item.Handle.Anchored = false
+                -- Disconnect and unanchor
+                local it = findItem()
+                if it and it:FindFirstChild("Handle") then
+                    it.Handle.Anchored = false
                 end
             end
-        end,
+        end
     })
 end
 
 -- Create toggles
-createDropToggle(Tab1, "📟 Drop EMF Reader near ghost", "6", Vector3.new(0, -2, -3))
-createDropToggle(Tab1, "📟 Drop Laser Projector near ghost", "8", Vector3.new(0, 0, 3))
-createDropToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 0, 4))
-createDropToggle(Tab1, "🌡️ Drop Thermometer near ghost", "2", Vector3.new(0, 0, -3), true)
+dropItemToggle(Tab1, "📟 Drop EMF Reader near ghost", "6", Vector3.new(0, -2, -3))
+dropItemToggle(Tab1, "📟 Drop Laser Projector near ghost", "8", Vector3.new(0, 0, 3))
+dropItemToggle(Tab1, "📷 Drop Camera near ghost", "1", Vector3.new(0, 0, 4))
+dropItemToggle(Tab1, "🌡️ Drop Thermometer near ghost", "2", Vector3.new(0, 0, -3), true)
+
 
 
 

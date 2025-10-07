@@ -175,44 +175,6 @@ local Gl = Tab1:CreateToggle({
    end,
 })
 
---! Lua Script: Smooth Follow, Noclip, Anti-Jitter (LocalScript)
-
-local RS = game:GetService("RunService")
-local RSStorage = game:GetService("ReplicatedStorage")
-local PL = game.Players.LocalPlayer
-local toggles = {}
-local temperature = "Waiting for thermometer to check"
-
--- Smooth & Snap settings
-local SMOOTHNESS_FACTOR = 0.2
-local SNAP_DISTANCE = 0.3
-
---------------------------------------------------------------------------------
--- Utility Functions
---------------------------------------------------------------------------------
-
-local function getAllItems(itemName)
-    local folder = workspace:FindFirstChild("Items")
-    if not folder then return {} end
-    local items = {}
-    for _, v in ipairs(folder:GetChildren()) do
-        if v.Name == itemName then
-            table.insert(items, v)
-        end
-    end
-    return items
-end
-
-local function setNetworkOwner(part)
-    if part:CanSetNetworkOwnership() then
-        part:SetNetworkOwner(PL)
-    end
-end
-
---------------------------------------------------------------------------------
--- Core Logic: Smooth Follow with Anti-Jitter
---------------------------------------------------------------------------------
-
 local function dropItemNoclip(tab, name, itemName, offset, showTemp)
     tab:CreateToggle({
         Name = name,
@@ -234,7 +196,7 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
             end
 
             if enabled then
-                toggles[itemName] = RS.RenderStepped:Connect(function()
+                toggles[itemName] = RS.RenderStepped:Connect(function(delta)
                     local ghostModel = workspace:FindFirstChild("Ghost")
                     if not ghostModel then return end
                     local hrp = ghostModel:FindFirstChild("HumanoidRootPart")
@@ -250,13 +212,9 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
                                 setNetworkOwner(pp)
                                 pp.CanCollide = false
 
-                                -- Anti-Jitter Logic
-                                local distance = (pp.Position - targetCFrame.Position).Magnitude
-                                if distance > SNAP_DISTANCE then
-                                    pp.CFrame = pp.CFrame:Lerp(targetCFrame, SMOOTHNESS_FACTOR)
-                                else
-                                    pp.CFrame = targetCFrame
-                                end
+                                -- ใช้ Lerp อย่างเดียว (ไม่วาป)
+                                local speed = 0.35 -- ปรับให้เร็วขึ้นและ smooth
+                                pp.CFrame = pp.CFrame:Lerp(targetCFrame, speed)
 
                                 -- Thermometer update
                                 if showTemp and it:FindFirstChild("Screen") then
@@ -273,7 +231,7 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
                     end
                 end)
             else
-                -- Restore items
+                -- ปิด toggle: ให้ item อยู่ที่ตำแหน่งปัจจุบัน (ไม่วาปกลับ)
                 local items = getAllItems(itemName)
                 for _, it in ipairs(items) do
                     if it and it.Parent then
@@ -281,7 +239,7 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
                         if pp and pp:IsA("BasePart") then
                             pp.CanCollide = true
                             pp:SetNetworkOwner(nil)
-                            pp.CFrame = char.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
+                            -- ไม่ต้องวาปกลับไปตัวผู้เล่น
                         end
                     end
                 end
@@ -294,6 +252,7 @@ local function dropItemNoclip(tab, name, itemName, offset, showTemp)
         end
     })
 end
+
 
 --------------------------------------------------------------------------------
 -- Create Toggles
